@@ -1,0 +1,111 @@
+package freedom.nio.codec;
+
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
+import java.util.Queue;
+
+import freedom.nio.DefaultFilterChain.FilterEntry;
+import freedom.nio.Filter;
+import freedom.nio.IoSession;
+import freedom.nio.NioSession;
+
+public class ProtocolCodecFilter implements Filter {
+
+	private Codec codec;
+	public ProtocolCodecFilter(Codec codec)
+	{
+		this.codec = codec;
+	}
+	@Override
+	public void connected(FilterEntry nextFilter, IoSession session,
+			Object msg) 
+	{
+		
+	}
+	@Override
+	public void received(FilterEntry nextFilter, IoSession session,Object msg)
+	{
+		if(!(msg instanceof ByteBuffer))
+		{
+			nextFilter.fireRead(session, msg);
+			return;
+		}
+		
+		ByteBuffer buffer = (ByteBuffer) msg;
+		if(session.hasFragment())
+		{
+			buffer = mergeBuffer(session, buffer);
+		}
+			
+		int startPosition = 0;
+		ProtocolDecoderOutput output = new ProtocolDecoderOutput();
+		while(codec.getDecoder().decode(session,buffer, output))
+		{
+			//startPosition == now position 说明根本一个字节数据都没有取,但是还要继续解码,会限入死loop
+			if(!buffer.hasRemaining() || buffer.position() == startPosition)
+				break;
+		}
+		//解码后的数据继续前行
+		output.flush(nextFilter, session);
+		
+		if(buffer.hasRemaining())
+		{
+			//剩余数据进行存储
+			session.storeFragment(buffer);
+		}
+	}
+	
+	/**
+	 * 合并数据(将之前余下的数据和现在的数据进行合并)
+	 * */
+	private ByteBuffer mergeBuffer(IoSession session, ByteBuffer buffer)
+	{
+		ByteBuffer fragment = (ByteBuffer) session.getAttr(NioSession.FRAGMENT);
+		int fragmentLen = fragment.limit();
+		int bufferLen   = buffer.limit();
+		byte[] array = new byte[fragmentLen + bufferLen];
+		System.arraycopy(fragment.array(), 0, array, 0, fragmentLen);
+		System.arraycopy(buffer.array(), 0, array, fragmentLen, bufferLen);
+		buffer = ByteBuffer.wrap(array);
+		session.clearFragment();
+		return buffer;
+	}
+	@Override
+	public void disconnected(FilterEntry nextFilter, IoSession session,
+			Object msg) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void idle(FilterEntry nextFilter, IoSession session, Object msg) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void write(FilterEntry nextFilter, IoSession session, Object msg) {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	static final class ProtocolDecoderOutput 
+	{
+		private Queue<Object> queue = new LinkedList<Object>();
+		
+		public Queue<Object> getQueue()
+		{
+			return this.queue;
+		}
+		
+		public void write(Object message)
+		{
+			this.queue.add(message);
+		}
+		
+		public void flush(FilterEntry nextFilter, IoSession session)
+		{
+			while(!queue.isEmpty())
+				nextFilter.fireRead(session, queue.poll());
+		}
+	}
+	
+}

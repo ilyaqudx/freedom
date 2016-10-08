@@ -47,7 +47,7 @@ public class NioSession implements IoSession{
 	
 	public void write(Object message)throws IOException
 	{
-		channel.write(ByteBuffer.allocate(1024));
+		filterChain.fireWrite(message);
 	}
 
 	@Override

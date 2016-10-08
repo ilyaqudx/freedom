@@ -31,9 +31,9 @@ public class LoggingFilter implements Filter {
 	}
 
 	@Override
-	public void write(FilterEntry nextFilter, IoSession session, Object msg) {
-		// TODO Auto-generated method stub
-		
+	public void write(FilterEntry nextFilter, IoSession session, Object msg)
+	{
+		nextFilter.fireWrite(session, msg);
 	}
 
 

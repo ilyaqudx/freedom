@@ -3,11 +3,13 @@ package freedom.nio.codec;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import freedom.nio.DefaultFilterChain.FilterEntry;
 import freedom.nio.Filter;
 import freedom.nio.IoSession;
 import freedom.nio.NioSession;
+import io.netty.buffer.ByteBuf;
 
 public class ProtocolCodecFilter implements Filter {
 
@@ -77,21 +79,36 @@ public class ProtocolCodecFilter implements Filter {
 		
 	}
 	@Override
-	public void idle(FilterEntry nextFilter, IoSession session, Object msg) {
+	public void idle(FilterEntry nextFilter, IoSession session, Object msg)
+	{
 		// TODO Auto-generated method stub
 		
 	}
 	@Override
-	public void write(FilterEntry nextFilter, IoSession session, Object msg) {
-		// TODO Auto-generated method stub
-		
+	public void write(FilterEntry nextFilter, IoSession session, Object msg)
+	{
+		if(msg instanceof ByteBuf)
+			nextFilter.fireWrite(session, msg);
+		else
+		{
+			ProtocolEncoderOutput output = new ProtocolEncoderOutput();
+			//编码
+			codec.getEncoder().encode(session, msg,output);
+			//将编码后的数据继续传递下去
+			output.flush(nextFilter, session);
+		}
 	}
 	
-	static final class ProtocolDecoderOutput 
+	static abstract class AbstractProtocolCodecOutput
 	{
-		private Queue<Object> queue = new LinkedList<Object>();
+		protected Queue<Object> queue;
 		
-		public Queue<Object> getQueue()
+		public AbstractProtocolCodecOutput(Queue<Object> queue)
+		{
+			this.queue = queue;
+		}
+
+		Queue<Object> getQueue()
 		{
 			return this.queue;
 		}
@@ -101,10 +118,36 @@ public class ProtocolCodecFilter implements Filter {
 			this.queue.add(message);
 		}
 		
-		public void flush(FilterEntry nextFilter, IoSession session)
+		public abstract void flush(FilterEntry nextFilter, IoSession session);
+	}
+	
+	static final class ProtocolDecoderOutput extends AbstractProtocolCodecOutput
+	{
+		public ProtocolDecoderOutput()
 		{
+			super(new LinkedList<Object>());
+		}
+
+		@Override
+		public void flush(FilterEntry nextFilter, IoSession session) {
 			while(!queue.isEmpty())
 				nextFilter.fireRead(session, queue.poll());
+			
+		}
+	}
+	
+	static final class ProtocolEncoderOutput extends AbstractProtocolCodecOutput
+	{
+		public ProtocolEncoderOutput() 
+		{
+			super(new ArrayBlockingQueue<Object>(64));
+		}
+
+		@Override
+		public void flush(FilterEntry nextFilter, IoSession session) {
+			while(!queue.isEmpty())
+				nextFilter.fireWrite(session, queue.poll());
+			
 		}
 	}
 	

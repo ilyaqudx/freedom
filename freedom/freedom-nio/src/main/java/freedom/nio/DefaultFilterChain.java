@@ -19,11 +19,20 @@ public class DefaultFilterChain implements FilterChain {
 		@Override
 		public void write(FilterEntry nextFilter, IoSession session, Object msg)
 		{
-			try {
-				session.write(ByteBuffer.allocate(1024));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if(msg instanceof ByteBuffer)
+			{
+				ByteBuffer buffer = (ByteBuffer) msg;
+				if(buffer.hasRemaining())
+				{
+					try 
+					{
+						session.getChannel().write(buffer);
+					}
+					catch (IOException e)
+					{
+						e.printStackTrace();
+					}
+				}
 			}
 		}
 		
@@ -35,22 +44,22 @@ public class DefaultFilterChain implements FilterChain {
 		}
 		
 		@Override
-		public void idle(FilterEntry nextFilter, IoSession session, Object msg) {
-			// TODO Auto-generated method stub
+		public void idle(FilterEntry nextFilter, IoSession session, Object msg) 
+		{
 			
 		}
 		
 		@Override
 		public void disconnected(FilterEntry nextFilter, IoSession session,
-				Object msg) {
-			// TODO Auto-generated method stub
+				Object msg)
+		{
 			
 		}
 		
 		@Override
 		public void connected(FilterEntry nextFilter, IoSession session,
-				Object msg) {
-			// TODO Auto-generated method stub
+				Object msg) 
+		{
 			
 		}
 	}, null, null);
@@ -183,7 +192,7 @@ public class DefaultFilterChain implements FilterChain {
 		}
 		public void fireWrite(IoSession session,Object msg) 
 		{
-			this.filter.write(next, session, msg);
+			this.filter.write(pre, session, msg);
 		}
 	}
 

@@ -97,5 +97,6 @@
 		<module>freedom-hall</module>
 		<module>freedom-study</module>
 		<module>freedom-nio</module>
+		<module>freedom-pay</module>
 	</modules>
 </project>

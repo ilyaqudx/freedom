@@ -10,6 +10,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import freedom.nio.future.IoFuture;
+import freedom.nio.future.WriteFuture;
+
 public class NioSession implements IoSession{
 
 	private SocketChannel channel;
@@ -45,9 +48,14 @@ public class NioSession implements IoSession{
 		attrs.put(FRAGMENT, fragment);
 	}
 	
-	public void write(Object message)throws IOException
+	public WriteFuture write(Object message)throws IOException
 	{
-		filterChain.fireWrite(message);
+		//如何将FUTURE携带到发送接口,封装一个发送对象WriteRequest
+		WriteFuture writeFuture = new WriteFuture(this);
+		WriteRequest request = new WriteRequest(this, writeFuture, message);
+		//filterChain.fireWrite(message);
+		filterChain.fireWrite(request);
+		return writeFuture;
 	}
 
 	@Override

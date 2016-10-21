@@ -17,21 +17,35 @@ public class DefaultFilterChain implements FilterChain {
 	private FilterEntry head   = new FilterEntry("head",new Filter() {
 		
 		@Override
-		public void write(FilterEntry nextFilter, IoSession session, Object msg)
+		public void write(FilterEntry nextFilter, IoSession session, WriteRequest request)
 		{
+			Object msg = request.getMsg();
 			if(msg instanceof ByteBuffer)
 			{
 				ByteBuffer buffer = (ByteBuffer) msg;
-				if(buffer.hasRemaining())
+				try 
 				{
-					try 
+					int bufferLen= buffer.remaining();
+					if(bufferLen > 0)
 					{
-						session.getChannel().write(buffer);
+						int retCount = 0;
+						while(buffer.hasRemaining())
+						{
+							int writen = session.getChannel().write(buffer);
+							retCount += writen;
+							System.out.println(writen);
+						}
+						
+						if(retCount == bufferLen)
+						{
+							session.getFilterChain().fireSent(retCount);
+							request.getFuture().set(retCount);
+						}
 					}
-					catch (IOException e)
-					{
-						e.printStackTrace();
-					}
+				}
+				catch (IOException e)
+				{
+					e.printStackTrace();
 				}
 			}
 		}
@@ -136,9 +150,9 @@ public class DefaultFilterChain implements FilterChain {
 	}
 
 	@Override
-	public void fireWrite( Object data)
+	public void fireWrite( WriteRequest request)
 	{
-		tailor.pre.fireWrite(session, data);
+		tailor.pre.fireWrite(session, request);
 	}
 	
 
@@ -190,9 +204,9 @@ public class DefaultFilterChain implements FilterChain {
 		{
 			this.filter.received(next, session, msg);
 		}
-		public void fireWrite(IoSession session,Object msg) 
+		public void fireWrite(IoSession session,WriteRequest request) 
 		{
-			this.filter.write(pre, session, msg);
+			this.filter.write(pre, session, request);
 		}
 	}
 

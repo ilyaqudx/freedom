@@ -7,11 +7,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+import freedom.nio.future.WriteFuture;
+
 public interface IoSession {
 
 	public long getId();
 	
-	public void write(Object message)throws IOException;
+	public WriteFuture write(Object message)throws IOException;
 	
 	public IoHandler getHandler();
 	

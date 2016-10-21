@@ -55,6 +55,22 @@ public class AppClient {
 							}
 						}
 					}
+					else if(key.isReadable())
+					{
+						SocketChannel socket = (SocketChannel) key.channel();
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+					}
 					it.remove();
 				}
 			}

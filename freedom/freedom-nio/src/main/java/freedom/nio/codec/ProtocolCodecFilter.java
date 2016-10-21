@@ -9,6 +9,7 @@ import freedom.nio.DefaultFilterChain.FilterEntry;
 import freedom.nio.Filter;
 import freedom.nio.IoSession;
 import freedom.nio.NioSession;
+import freedom.nio.WriteRequest;
 import io.netty.buffer.ByteBuf;
 
 public class ProtocolCodecFilter implements Filter {
@@ -85,12 +86,15 @@ public class ProtocolCodecFilter implements Filter {
 		
 	}
 	@Override
-	public void write(FilterEntry nextFilter, IoSession session, Object msg)
+	public void write(FilterEntry nextFilter, IoSession session, WriteRequest request)
 	{
-		if(msg instanceof ByteBuf)
-			nextFilter.fireWrite(session, msg);
+		Object message = request.getMsg();
+		if(message instanceof ByteBuffer)
+			nextFilter.fireWrite(session, message);
 		else
 		{
+			//?此处如何继续将WriteFuture传递下去?直接WriteRequest或单独写WriteFuture
+			//答案是：过滤器接受的参数就是WriteRequest
 			ProtocolEncoderOutput output = new ProtocolEncoderOutput();
 			//编码
 			codec.getEncoder().encode(session, msg,output);

@@ -6,14 +6,20 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Queue;
 
 import freedom.nio.future.WriteFuture;
+import freedom.nio.processor.IoProcessor;
 
 public interface IoSession {
 
 	public long getId();
 	
 	public WriteFuture write(Object message)throws IOException;
+	
+	public void setProcessor(IoProcessor processor);
+	
+	public IoProcessor getProcessor();
 	
 	public IoHandler getHandler();
 	
@@ -38,4 +44,6 @@ public interface IoSession {
 	public void storeFragment(ByteBuffer buffer);
 
 	public void clearFragment();
+	
+	public Queue<WriteRequest> getWriteRequestQueue();
 }

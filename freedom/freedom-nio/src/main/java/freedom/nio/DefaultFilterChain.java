@@ -1,6 +1,5 @@
 package freedom.nio;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,12 +22,12 @@ public class DefaultFilterChain implements FilterChain {
 			if(msg instanceof ByteBuffer)
 			{
 				ByteBuffer buffer = (ByteBuffer) msg;
-				try 
+				int bufferLen= buffer.remaining();
+				if(bufferLen > 0)
 				{
-					int bufferLen= buffer.remaining();
-					if(bufferLen > 0)
-					{
-						int retCount = 0;
+					session.getWriteRequestQueue().offer(request);
+					session.getProcessor().addPendingWriteSession(session);
+					/*int retCount = 0;
 						while(buffer.hasRemaining())
 						{
 							int writen = session.getChannel().write(buffer);
@@ -40,12 +39,7 @@ public class DefaultFilterChain implements FilterChain {
 						{
 							session.getFilterChain().fireSent(retCount);
 							request.getFuture().set(retCount);
-						}
-					}
-				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
+						}*/
 				}
 			}
 		}
@@ -73,6 +67,12 @@ public class DefaultFilterChain implements FilterChain {
 		@Override
 		public void connected(FilterEntry nextFilter, IoSession session,
 				Object msg) 
+		{
+			
+		}
+
+		@Override
+		public void sent(FilterEntry nextFilter, IoSession sesion, Object msg)
 		{
 			
 		}
@@ -104,9 +104,15 @@ public class DefaultFilterChain implements FilterChain {
 		}
 
 		@Override
-		public void write(FilterEntry nextFilter,IoSession session,Object msg)
+		public void write(FilterEntry nextFilter, IoSession session, WriteRequest request) {
+			session.getHandler().write(session, request);
+			
+		}
+
+		@Override
+		public void sent(FilterEntry nextFilter, IoSession sesion, Object msg)
 		{
-			 session.getHandler().write(session, msg);
+			session.getHandler().write(session, msg);
 		}
 		
 		
@@ -208,6 +214,10 @@ public class DefaultFilterChain implements FilterChain {
 		{
 			this.filter.write(pre, session, request);
 		}
+		public void fireSent(IoSession session,int len)
+		{
+			this.filter.sent(next, session, len);
+		}
 	}
 
 
@@ -215,5 +225,10 @@ public class DefaultFilterChain implements FilterChain {
 	public List<FilterEntry> getEntries()
 	{
 		return entries;
+	}
+	@Override
+	public void fireSent(int len)
+	{
+		head.fireSent(session, len);
 	}
 }

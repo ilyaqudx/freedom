@@ -8,8 +8,6 @@ public class DefaultIoProcessorPool implements IoProcessorPool<IoProcessor> {
 
 	public static final int PROCESSER_COUNT = Runtime.getRuntime().availableProcessors() + 1;
 	
-	public static final String PROCESSOR = "processor";
-	
 	private IoProcessor[] pool = new IoProcessor[PROCESSER_COUNT];
 	
 	public DefaultIoProcessorPool()
@@ -24,13 +22,13 @@ public class DefaultIoProcessorPool implements IoProcessorPool<IoProcessor> {
 	public IoProcessor getProcessor(IoSession session) throws Exception
 	{
 		//problem 7
-		IoProcessor processor = (IoProcessor) session.getAttr(PROCESSOR);
+		IoProcessor processor = (IoProcessor) session.getProcessor();
 		if(null == processor)
 		{
 			processor = pool[(int) (Math.abs(session.getId()) % PROCESSER_COUNT)];
 			if(processor == null)
 				throw new Exception("add processor failed");
-			session.setAttr(PROCESSOR,processor);
+			session.setProcessor(processor);
 		}
 		return processor;
 	}

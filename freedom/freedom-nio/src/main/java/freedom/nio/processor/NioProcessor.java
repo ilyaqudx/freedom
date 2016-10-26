@@ -14,6 +14,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import freedom.nio.Channel;
 import freedom.nio.IoSession;
+import freedom.nio.WriteRequest;
 
 public class NioProcessor implements IoProcessor,Runnable {
 
@@ -117,8 +118,33 @@ public class NioProcessor implements IoProcessor,Runnable {
 	
 	private void write(IoSession session)
 	{
-		
-		
+		WriteRequest request = session.getCurrentWriteRequest();
+		if(null == request)
+		{
+			request = session.getWriteRequestQueue().poll();
+			session.setCurrentWriteRequest(request);
+		}
+		if(request != null)
+		{
+			if(request.getMsg() instanceof ByteBuffer)
+			{
+				try 
+				{
+					ByteBuffer pendingBuffer = (ByteBuffer) request.getMsg();
+					session.getChannel().write(pendingBuffer);
+					if(!pendingBuffer.hasRemaining())
+					{
+						//all send
+						session.setCurrentWriteRequest(null);
+						session.getFilterChain().fireSent(request);
+					}
+				} 
+				catch (IOException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
 	/**
@@ -130,8 +156,9 @@ public class NioProcessor implements IoProcessor,Runnable {
 		ByteBuffer buffer = ByteBuffer.allocate(4096);
 		int ret = 0;
 		int readBytes = 0;
-		try {
-			//尽可能先把channel缓冲区中的数据取出来,让tcp可以接收更多的数据
+		try 
+		{
+			//尽可能先把channel缓冲区中的数据取出来,让内核可以接收更多的数据
 			while ((ret = session.read(buffer)) > 0) 
 			{
 				readBytes += ret;
@@ -155,10 +182,12 @@ public class NioProcessor implements IoProcessor,Runnable {
 		{
 			e.printStackTrace();
 			//此处需要处理closed session
-			try {
+			try
+			{
 				session.close();
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
+			} 
+			catch (IOException e1) 
+			{
 				e1.printStackTrace();
 			}
 		}

@@ -2,6 +2,7 @@ package freedom.game.module.table.entity;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -267,5 +268,4 @@ public class Player {
 		return "Player [id=" + id + ", name=" + name + ", sex=" + sex
 				+ ", seat=" + seat + ", gold=" + gold + ", head=" + head + "]";
 	}
-	
 }

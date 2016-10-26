@@ -27,6 +27,7 @@ public class NioSession implements IoSession{
 	private long sessionId;
 	public static final AtomicLong id = new AtomicLong(0);
 	private Queue<WriteRequest> writeRequestQueue = new LinkedBlockingQueue<WriteRequest>();
+	private WriteRequest currentWriteRequest;
 	private IoProcessor processor;
 	public NioSession(SocketChannel channel,IoHandler handler,FilterChain filterChain)
 	{
@@ -152,6 +153,18 @@ public class NioSession implements IoSession{
 	public void setProcessor(IoProcessor processor)
 	{
 		setAttr(PROCESSOR, processor);
+	}
+
+	@Override
+	public WriteRequest getCurrentWriteRequest() {
+		// TODO Auto-generated method stub
+		return this.currentWriteRequest;
+	}
+
+	@Override
+	public void setCurrentWriteRequest(WriteRequest writeRequest) {
+		// TODO Auto-generated method stub
+		this.currentWriteRequest = writeRequest;
 	}
 	
 	

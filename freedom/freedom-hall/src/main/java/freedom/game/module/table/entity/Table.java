@@ -1,7 +1,6 @@
 package freedom.game.module.table.entity;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,21 +23,21 @@ public class Table {
 	//座位资源
 	private AtomicInteger seat = new AtomicInteger(4);
 	//真实的座位号
-	private List<Integer> emptySeats = Lists.newArrayList(0,1,2,3);
-	private List<Integer> sitedSeats = Lists.newArrayList();
+	List<Integer> emptySeats = Lists.newArrayList(0,1,2,3);
+	List<Integer> sitedSeats = Lists.newArrayList();
 	private Room room;
-	private volatile State state;
-	private volatile State nextState;
-	private volatile PlayingState playingState;
-	private volatile PlayingState nextPlayingState;
-	private List<Player> users = new ArrayList<Player>();
-	private List<Card> tableCard = new ArrayList<Card>();
-	private Player currentPlayer;
-	private int timeout;
-	private long startTime;
+	volatile State state;
+	volatile State nextState;
+	volatile PlayingState playingState;
+	List<Player> users = new ArrayList<Player>();
+	List<Card> tableCard = new ArrayList<Card>();
+	Player currentPlayer;
+	int timeout;
+	long startTime;
 	private int firstSeat;
 	private long lastInTime;
 	private long delayStart = 10000;
+	private Logic logic ;
 	
 	public int getFirstSeat() {
 		return firstSeat;
@@ -100,7 +99,8 @@ public class Table {
 	
 	public Table(Room room)
 	{
-		this.room = room;
+		this.room  = room;
+		this.logic = new Logic(this);
 		this.init();
 	}
 	
@@ -110,25 +110,7 @@ public class Table {
 	private void init()
 	{
 		this.state = State.INIT;
-		this.initCard();
-	}
-	
-	protected void initCard()
-	{
-		for (int i = 0; i < 3; i++) {
-			for (int j = 0; j < 4; j++) {
-				for (int j2 = 0; j2 < 9; j2++) {
-					tableCard.add(new Card(i*36 + j*9 + j2 + 1,i+1,j2+1));
-				}
-			}
-		}
-	}
-	
-	protected void shuffleCard()
-	{
-		Collections.shuffle(tableCard);
-		Collections.shuffle(tableCard);
-		Collections.shuffle(tableCard);
+		this.logic .initCard();
 	}
 	
 	public boolean getSeat()
@@ -136,86 +118,6 @@ public class Table {
 		return seat.decrementAndGet() >= 0;
 	}
 	
-	public void sitdown(Player player)
-	{
-		player.setRoomId(room.getId());
-		player.setTableId(id);
-		player.setSeat(emptySeats.remove(0));
-		sitedSeats.add(player.getSeat());
-		users.add(player);
-		lastInTime = System.currentTimeMillis();
-	}
-	
-	public void start()
-	{
-		//-洗牌
-		shuffleCard();
-		//-发牌
-		firstPutCard();
-		//-通知客户端显示发牌动画
-		GameManager.context.getBean(TableMessageSender.class)
-		.sendStartGameFirstPutCard(this);
-	}
-	
-	private void firstPutCard()
-	{
-		int[][] first = new int[][]{
-				{1,1},{1,1},{1,1},{1,3},
-				{1,3},{1,3},{1,4},{1,4},
-				{1,5},{1,2},{1,2},{1,2},
-				{1,6}
-		};
-		int[][] second = new int[][]{
-				{1,8},{1,2},{1,5},{1,6},
-				{1,3},{1,4},{1,4},{1,8},
-				{1,5},{1,5},{1,6},{1,7},
-				{1,7}
-		};
-		int[][] up = new int[][]{
-				{2,1},{2,1},{2,2},{2,2},
-				{2,3},{2,3},{2,4},{2,4},
-				{2,5},{2,5},{2,6},{2,6},
-				{2,6}
-		};
-		int[][] left = new int[][]{
-				{3,1},{3,1},{3,2},{3,2},
-				{3,3},{3,3},{3,4},{3,4},
-				{3,5},{3,5},{3,6},{3,6},
-				{3,6}
-		};
-		List<int[][]> random = new ArrayList<int[][]>();
-		random.add(first);
-		random.add(second);
-		random.add(up);
-		random.add(left);
-		for (int i = 0; i < 4; i++) 
-		{
-			List<Card> handCard = users.get(i).getHandCard();
-			int[][] temp = random.get(i);
-			for (int j = 0; j < temp.length; j++) 
-			{
-				for (Card card : tableCard) {
-					if(card.getColor() == temp[j][0] && card.getValue() == temp[j][1])
-					{
-						handCard.add(card);
-						tableCard.remove(card);
-						break;
-					}
-				}
-			}
-		}
-		/*int[] putRule = new int[]{4,4,4,1};
-		for (int i = 0; i < 4; i++)
-		{
-			for (Player p : users)
-			{
-				for (int j = 0; j < putRule[i]; j++) 
-				{
-					p.getHandCard().add(tableCard.remove(0));
-				}
-			}
-		}*/
-	}
 	
 	public long getId() {
 		return id;
@@ -286,19 +188,6 @@ public class Table {
 		return new Scene(this);
 	}
 	
-	public Player ready(long playerId)
-	{
-		for (Player p : users) 
-		{
-			if(p.getId() == playerId)
-			{
-				p.setReady(Consts.TRUE);
-				return p;
-			}
-		}
-		return null;
-	}
-	
 	public void update()
 	{
 		if(state == State.INIT)
@@ -317,21 +206,21 @@ public class Table {
 				}
 				
 				if(allReady && --delayStart <= 0){
-					start();
+					logic.start();
 					state = State.START_GAME;
-					this.timeout(6000);//6s 发牌时间
+					logic.timeout(6000);//6s 发牌时间
 					System.out.println("开始游戏  : " + id);
 				}
 			}else
 			{
 				//检查是否需要添加机器人
-				if(hasRealPlayer() && System.currentTimeMillis() - lastInTime >= 1000)
+				if(logic.hasRealPlayer() && System.currentTimeMillis() - lastInTime >= 1000)
 				{
 					if(getSeat()){
 						//添加机器人
 						Robot robot = GameManager.context.getBean(RobotManager.class)
 								.getRobot();
-						sitdown(robot);
+						logic.sitdown(robot);
 						robot.setReady(Consts.TRUE);
 						GameManager.context.getBean(TableMessageSender.class)
 						.sendEntryRoomMessage(robot, this);
@@ -343,18 +232,18 @@ public class Table {
 		}
 		else if(state == State.START_GAME)
 		{
-			if(isTimeout())
+			if(logic.isTimeout())
 			{
 				//发牌总共超时时间给6s
 				GameManager.context.getBean(TableMessageSender.class)
 				.sendStartSelectLackCard(this);
 				this.state =  State.SELECT_LACK_CARD;
-				this.timeout(10 * 1000);//8秒选择缺门
+				logic.timeout(10 * 1000);//8秒选择缺门
 			}
 		}
 		else if(state == State.SELECT_LACK_CARD)
 		{
-			boolean isTimeout = isTimeout();
+			boolean isTimeout = logic.isTimeout();
 			boolean allSelected = true;
 			for (Player p : users) {
 				if(!p.isSelectedLackColor())
@@ -378,14 +267,14 @@ public class Table {
 				.sendSelectLackCardResult(this);
 				this.currentPlayer = users.get(0);
 				this.playingState = PlayingState.PUT_CARD;
-				this.delay(2000, State.PLAYING);
+				logic.delay(2000, State.PLAYING);
 			}
 		}
 		else if(state == State.PLAYING)
 		{
 			if(playingState == PlayingState.PUT_CARD)
 			{
-				boolean isTimeout = isTimeout();
+				boolean isTimeout = logic.isTimeout();
 				if(!tableCard.isEmpty())
 				{
 					Card card = this.tableCard.remove(0);
@@ -408,10 +297,10 @@ public class Table {
 					{
 						GameManager.context.getBean(TableMessageSender.class)
 						.sendWaitResponseAfterPutCard(this);
-						timeoutInPlaying(PlayingState.WAIT_RESPONSE, 5000);
+						logic.timeoutInPlaying(PlayingState.WAIT_RESPONSE, 5000);
 					}else
 					{
-						timeoutInPlaying(PlayingState.WAIT_PLAYER_OUT,5000);
+						logic.timeoutInPlaying(PlayingState.WAIT_PLAYER_OUT,5000);
 						System.out.println("进入等待打牌状态 : " + isTimeout + ",timeout = " + timeout);
 					}
 				}else
@@ -422,7 +311,7 @@ public class Table {
 			}
 			else if(playingState == PlayingState.WAIT_PLAYER_OUT)
 			{
-				boolean isTimeout = isTimeout();
+				boolean isTimeout = logic.isTimeout();
 				if(isTimeout)
 				{
 					System.out.println("等待玩家 " +this.currentPlayer.getName()+ "打牌超时");
@@ -434,25 +323,25 @@ public class Table {
 					//打牌后判断是否有玩家可以有响应(胡/杠/碰)
 					List<Player> responsePlayers = CardUtil.hasResponse(this);
 					if(responsePlayers.isEmpty())
-						nextPlayerPutCard();
+						logic.nextPlayerPutCard();
 					else
 					{
 						//发送等待响应消息
 						GameManager.context.getBean(TableMessageSender.class)
 						.sendWaitResponseAfterOutCard(this);
-						timeoutInPlaying(PlayingState.WAIT_RESPONSE, 10000);
+						logic.timeoutInPlaying(PlayingState.WAIT_RESPONSE, 10000);
 					}
 						
 				}
 			}
 			else if(playingState == PlayingState.WAIT_RESPONSE)
 			{
-				boolean timeout = isTimeout();
+				boolean timeout = logic.isTimeout();
 				if(timeout)
 				{
 					//如果没有响应则代表取消操作,下一个玩家继续
-					resetOpts();
-					nextPlayerPutCard();
+					logic.resetOpts();
+					logic.nextPlayerPutCard();
 				}
 			}
 		}
@@ -462,79 +351,11 @@ public class Table {
 		}
 		else if(state == State.DELAY)
 		{
-			if(isTimeout())
+			if(logic.isTimeout())
 			{
 				this.state = nextState;
 			}
 		}
-	}
-	
-	private void resetOpts()
-	{
-		for (Player p : users) 
-		{
-			if(p.hasOpt())
-			{
-				p.getOpts().clear();
-			}
-		}
-	}
-	
-	public void nextPlayerPutCard()
-	{
-		Player player = computeNextPlayer(currentPlayer);
-		this.currentPlayer = player;
-		timeoutInPlaying(PlayingState.PUT_CARD, 0);
-	}
-
-	public Player computeNextPlayer(Player operatorPlayer) {
-		int seat = operatorPlayer.getSeat();
-		Player player = null;
-		while(null == player || player.isHu())
-		{
-			if(seat == this.users.size() - 1)
-				player = users.get(0);
-			else
-				player = users.get(seat + 1);
-			seat = player.getSeat();
-		}
-		return player;
-	}
-	
-	private int playingStateTimeout(PlayingState state)
-	{
-		int timeout = 10;
-		switch (state) {
-		case PUT_CARD:
-			timeout = 0;
-			break;
-		case WAIT_PLAYER_OUT:
-			timeout = 10;
-		case WAIT_RESPONSE:
-			timeout = 10;
-		}
-		return timeout * 1000;
-	}
-	
-	/**
-	 * 指定下一玩家和状态
-	 * */
-	public void nextPlayer(Player nextPlayer,PlayingState playingState)
-	{
-		this.currentPlayer = nextPlayer;
-		timeoutInPlaying(playingState,playingStateTimeout(playingState));
-	}
-	
-	
-	
-	private boolean hasRealPlayer()
-	{
-		for (Player player : users) 
-		{
-			if(player.getRobot() == Consts.FALSE)
-				return true;
-		}
-		return false;
 	}
 	
 	public Player getPlayer(long playerId)
@@ -545,33 +366,6 @@ public class Table {
 				return player;
 		}
 		return null;
-	}
-	
-	public void timeout(int timeout)
-	{
-		this.timeout = timeout;
-		this.startTime = System.currentTimeMillis();
-	}
-	
-	public void timeoutInPlaying(PlayingState playingState,int timeout)
-	{
-		//此处先设置状态,后设置超时时间,可以解决本家手动打牌后,之后的玩家(目前是机器人)马上因为超时而直接出牌,
-		//打牌后状态设置为摸牌,超时时间为0(应该是0引起的,考虑是否移除摸牌状态)
-		//-bug?同时另一个BUG,和牌现在不能提示.不知是不是将状态先设置的原因,之前不存在此情况
-		this.playingState = playingState;
-		timeout(timeout);
-	}
-	
-	private void delay(int timeout,State nextState)
-	{
-		this.state = State.DELAY;
-		timeout(timeout);
-		this.nextState = nextState;
-	}
-	
-	private boolean isTimeout()
-	{
-		return System.currentTimeMillis() - startTime >= timeout;
 	}
 	
 	/**

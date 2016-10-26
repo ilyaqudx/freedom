@@ -7,4 +7,51 @@
   </parent>
   <groupId>freedom-study</groupId>
   <artifactId>freedom-study</artifactId>
+  <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- 这里一定要配置上java的版本，如果是1.7版本的可不用配置 -->
+        <java.version>1.8</java.version>
+        <!-- 配置你的tomcat版本 -->
+        <tomcat.version>8.0.30</tomcat.version>
+    </properties>
+  <dependencies>
+  		<dependency>
+            <!-- 导入jar包 -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>1.3.2.RELEASE</version>
+        </dependency>
+        <dependency>
+            <!-- 导入jar包 -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+            <version>1.3.2.RELEASE</version>
+            <!-- <exclusions>
+		        <exclusion>
+		            <groupId>org.apache.tomcat</groupId>
+		            <artifactId>tomcat-jdbc</artifactId>
+		        </exclusion>
+		    </exclusions> -->
+        </dependency>
+        <!--Mybatis-->
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis-spring</artifactId>
+            <version>1.2.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis</artifactId>
+            <version>3.2.8</version>
+        </dependency>
+  </dependencies>
+  
+  <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -2,11 +2,11 @@ package freedom.nio.future;
 
 import freedom.nio.IoSession;
 
-public class WriteFuture implements IoFuture<Integer> {
+public class WriteFuture implements IoFuture<Boolean> {
 
-	private IoFutureListener<Integer> listener;
+	private IoFutureListener<Boolean> listener;
 	private IoSession session;
-	private Integer value;
+	private Boolean value;
 	private volatile boolean done;
 	public WriteFuture(IoSession session)
 	{
@@ -14,7 +14,7 @@ public class WriteFuture implements IoFuture<Integer> {
 	}
 
 	@Override
-	public Integer get() 
+	public Boolean get() 
 	{
 		synchronized (this) 
 		{
@@ -32,7 +32,7 @@ public class WriteFuture implements IoFuture<Integer> {
 	}
 
 	@Override
-	public Integer get(long timeout) 
+	public Boolean get(long timeout) 
 	{
 		synchronized (this) 
 		{
@@ -68,13 +68,13 @@ public class WriteFuture implements IoFuture<Integer> {
 	}
 
 	@Override
-	public void addListener(IoFutureListener<Integer> listener) 
+	public void addListener(IoFutureListener<Boolean> listener) 
 	{
 		this.listener = listener;
 	}
 
 	@Override
-	public void set(Integer v)
+	public void set(Boolean v)
 	{
 		synchronized (this) 
 		{

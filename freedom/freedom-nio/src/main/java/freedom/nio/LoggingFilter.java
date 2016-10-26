@@ -5,8 +5,8 @@ import freedom.nio.DefaultFilterChain.FilterEntry;
 public class LoggingFilter implements Filter {
 
 	@Override
-	public void connected(FilterEntry nextFilter, IoSession session, Object msg) {
-		// TODO Auto-generated method stub
+	public void connected(FilterEntry nextFilter, IoSession session, Object msg)
+	{
 		
 	}
 
@@ -19,23 +19,27 @@ public class LoggingFilter implements Filter {
 
 	@Override
 	public void disconnected(FilterEntry nextFilter, IoSession session,
-			Object msg) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void idle(FilterEntry nextFilter, IoSession session, Object msg) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void write(FilterEntry nextFilter, IoSession session, Object msg)
+			Object msg)
 	{
-		nextFilter.fireWrite(session, msg);
+		
 	}
 
+	@Override
+	public void idle(FilterEntry nextFilter, IoSession session, Object msg)
+	{
+		// TODO Auto-generated method stub
+		
+	}
 
+	@Override
+	public void write(FilterEntry nextFilter, IoSession session, WriteRequest request)
+	{
+		nextFilter.fireWrite(session,request);
+	}
 
+	@Override
+	public void sent(FilterEntry nextFilter, IoSession session, Object msg)
+	{
+		nextFilter.fireSent(session, (WriteRequest)msg);
+	}
 }

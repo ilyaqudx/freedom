@@ -1,20 +1,12 @@
 package freedom.study.java8.stream;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 public class StreamApi {
 
 	
 	
 	public static void main(String[] args) 
 	{
-		Random r = new Random();
+		/*Random r = new Random();
 		List<Person> ps = new ArrayList<Person>();
 		for (int i = 0; i < 7; i++)
 		{
@@ -24,7 +16,7 @@ public class StreamApi {
 		
 		Stream<Long> s = map(filter(ps, p -> p.getAge() > 18), Person::getId);
 		
-		List<Long> list = toList(s);
+		List<Long> list = toList(s);*/
 		
 		/*Person max = ps.stream().max((p1,p2) -> p1.getAge() > p2.getAge() ? 1 : -1).get();
 		System.out.println(max);
@@ -49,7 +41,7 @@ public class StreamApi {
 	
 	
 	
-	public static final <T> Stream<T> filter(List<T> list,Predicate<T> predicate)
+	/*public static final <T> Stream<T> filter(List<T> list,Predicate<T> predicate)
 	{
 		return list.stream().filter(predicate);
 	}
@@ -66,39 +58,39 @@ public class StreamApi {
 	
 	
 	
-	/**
+	*//**
 	 * 指定单个值过滤
-	 * */
+	 * *//*
 	public static final List<Person> filterEquals(List<Person> list,int age)
 	{
 		return list.stream().filter(p -> p.getAge() == age && p.getName().contains("张三")).collect(Collectors.toList());
 	}
 	
-	/**
+	*//**
 	 * 指定集合过滤(在集合内容的元素有效)
-	 * */
+	 * *//*
 	public static final List<Person> filterInCollection(List<Integer> ids,List<Person> list)
 	{
 		return list.stream().filter(p -> ids.stream().anyMatch(n -> p.getId() == n.intValue())).collect(Collectors.toList());
 	}
 	
-	/**
+	*//**
 	 * 排序
-	 * */
+	 * *//*
 	public static final List<Person> sorted(List<Person> list)
 	{
 		return list.stream().sorted((p1,p2) -> p1.getAge() > p2.getAge() ? 1 : -1).collect(Collectors.toList());
 	}
-	/**
+	*//**
 	 * 取最小值
-	 * */
+	 * *//*
 	public static final Person min(List<Person> list)
 	{
 		return list.stream().min((p1,p2) -> p1.getAge() > p2.getAge() ? 1 : -1).get();
 	}
-	/**
+	*//**
 	 * 最大值
-	 * */
+	 * *//*
 	public static final Person max(List<Person> list)
 	{
 		return list.stream().max((p1,p2) -> p1.getAge() < p2.getAge() ? 1 : -1).get();
@@ -109,16 +101,16 @@ public class StreamApi {
 		return list.stream().mapToLong(Person::getId).sum();
 	}
 	
-	/**
+	*//**
 	 * 取前N个元素
-	 * */
+	 * *//*
 	public static final List<Person> limit(List<Person> list, int n)
 	{
 		return list.stream().limit(n).collect(Collectors.toList());
 	}
-	/**
+	*//**
 	 * 跳过前N个元素
-	 * */
+	 * *//*
 	public static final List<Person> skip(List<Person> list,int n)
 	{
 		return list.stream().skip(n).collect(Collectors.toList());
@@ -128,7 +120,7 @@ public class StreamApi {
 	{
 		//list.stream().map(Person::getName);
 		return list.stream().map(p -> p.getId()).collect(Collectors.toList());
-	}
+	}*/
 	
 	
 	

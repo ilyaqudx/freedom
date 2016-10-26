@@ -27,19 +27,6 @@ public class DefaultFilterChain implements FilterChain {
 				{
 					session.getWriteRequestQueue().offer(request);
 					session.getProcessor().addPendingWriteSession(session);
-					/*int retCount = 0;
-						while(buffer.hasRemaining())
-						{
-							int writen = session.getChannel().write(buffer);
-							retCount += writen;
-							System.out.println(writen);
-						}
-						
-						if(retCount == bufferLen)
-						{
-							session.getFilterChain().fireSent(retCount);
-							request.getFuture().set(retCount);
-						}*/
 				}
 			}
 		}
@@ -74,7 +61,7 @@ public class DefaultFilterChain implements FilterChain {
 		@Override
 		public void sent(FilterEntry nextFilter, IoSession sesion, Object msg)
 		{
-			
+			nextFilter.fireSent(sesion, (WriteRequest)msg);
 		}
 	}, null, null);
 	private FilterEntry tailor = new FilterEntry("tailor",new Filter() {
@@ -214,9 +201,9 @@ public class DefaultFilterChain implements FilterChain {
 		{
 			this.filter.write(pre, session, request);
 		}
-		public void fireSent(IoSession session,int len)
+		public void fireSent(IoSession session,WriteRequest request)
 		{
-			this.filter.sent(next, session, len);
+			this.filter.sent(next, session, request);
 		}
 	}
 
@@ -227,8 +214,9 @@ public class DefaultFilterChain implements FilterChain {
 		return entries;
 	}
 	@Override
-	public void fireSent(int len)
+	public void fireSent(WriteRequest request)
 	{
-		head.fireSent(session, len);
+		request.getFuture().set(true);
+		head.fireSent(session, request);
 	}
 }

@@ -8,7 +8,7 @@ public class StreamApp {
 
 	public static void main(String[] args)
 	{
-		List<User> users = new ArrayList<StreamApp.User>()
+		/*List<User> users = new ArrayList<StreamApp.User>()
 		{
 			{
 				add(new User(1, "zhangsan", "", 3));
@@ -23,7 +23,7 @@ public class StreamApp {
 		
 		for (String string : names) {
 			System.out.println(string);
-		}
+		}*/
 	}
 	
 	static class User{

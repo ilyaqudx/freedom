@@ -46,4 +46,10 @@ public interface IoSession {
 	public void clearFragment();
 	
 	public Queue<WriteRequest> getWriteRequestQueue();
+	/**
+	 * 获取当前需要处理的写请求
+	 * */
+	public WriteRequest getCurrentWriteRequest();
+	
+	public void setCurrentWriteRequest(WriteRequest writeRequest);
 }

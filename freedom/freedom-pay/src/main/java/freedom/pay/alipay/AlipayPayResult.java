@@ -5,7 +5,15 @@ public class AlipayPayResult {
 	private String buyer_id,trade_no,body,use_coupon,notify_time,subject
 	,sign_type,is_total_fee_adjust,notify_type,out_trade_no,trade_status
 	,discount,sign,gmt_create,buyer_email,price,total_fee,seller_id,quantity
-	,seller_email,notify_id,payment_type;
+	,seller_email,notify_id,payment_type,gmt_payment;
+
+	public String getGmt_payment() {
+		return gmt_payment;
+	}
+
+	public void setGmt_payment(String gmt_payment) {
+		this.gmt_payment = gmt_payment;
+	}
 
 	public String getBuyer_id() {
 		return buyer_id;

@@ -8,8 +8,8 @@ import freedom.game.module.room.sender.TableMessageSender;
 import freedom.game.module.table.entity.Card;
 import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
-import freedom.game.module.table.entity.Table.State;
 import freedom.game.module.table.message.command.OutCardMessage;
+import freedom.game.module.table.state.OutCardState;
 import freedom.hall.Cmd;
 import freedom.socket.command.AbstractCommand;
 import freedom.socket.command.LogicException;
@@ -29,8 +29,8 @@ public class OutCardCommand extends AbstractCommand<OutCardMessage> {
 		Table table = roomManager.getTable(playerId);
 		if(table == null)
 			msg.setEx(new LogicException(-1, "玩家不在房间中"));
-		else if(table.getState() != State.PLAYING)
-			msg.setEx(new LogicException(-1, "当前状态不能出牌 : " + table.getState().ordinal()));
+		else if(!(table.getState() instanceof OutCardState))
+			msg.setEx(new LogicException(-1, "当前状态不能出牌 : " + table.getState().V()));
 		else if(table.getCurrentPlayer().getId() != playerId)
 			msg.setEx(new LogicException(-1, "没有轮到该玩家出牌"));
 		else{
@@ -40,8 +40,8 @@ public class OutCardCommand extends AbstractCommand<OutCardMessage> {
 			{
 				player.outCard(card,player.isGangFlag());
 				sender.sendPlayerOutCard(table);
-				table.nextPlayerPutCard();
-				System.out.println("玩家出牌成功");
+				table.getLogic().nextPlayerPutCard();
+				System.out.println(String.format("玩家【%s】出牌: %s", player.getName(),card.colorString()));
 			}else
 				msg.setEx(new LogicException(-1, "玩家没有这张牌"));
 		}

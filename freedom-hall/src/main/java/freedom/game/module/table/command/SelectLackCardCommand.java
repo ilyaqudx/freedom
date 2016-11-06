@@ -7,6 +7,7 @@ import freedom.game.module.room.manager.RoomManager;
 import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
 import freedom.game.module.table.message.command.SelectLackCardMessage;
+import freedom.game.module.table.state.SelectLackCardState;
 import freedom.hall.Cmd;
 import freedom.socket.command.AbstractCommand;
 import freedom.socket.command.LogicException;
@@ -24,7 +25,7 @@ public class SelectLackCardCommand extends AbstractCommand<SelectLackCardMessage
 		Table table = roomManager.getTable(playerId);
 		if(null == table)
 			msg.setEx(new LogicException(-1, "玩家不在牌桌中"));
-		else if(table.getState() != Table.State.SELECT_LACK_CARD)
+		else if(!(table.getState() instanceof SelectLackCardState))
 			msg.setEx(new LogicException(-1, "当前牌桌状态不能选择缺门"));
 		else
 		{

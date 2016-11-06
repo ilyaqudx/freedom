@@ -132,7 +132,7 @@ public class TableMessageSender {
 		{
 			NotifySelectLackCardResultMessage message = 
 					new NotifySelectLackCardResultMessage(Cmd.Notify.SELECT_LACK_COLOR_RESULT
-							,table.getTimeout(),results);
+							,table.getLogic().getTimeout(),results);
 			send(p, message);
 		}
 	}
@@ -144,7 +144,7 @@ public class TableMessageSender {
 	{
 		//当前玩家
 		Player currentPlayer = table.getCurrentPlayer();
-		Card putCard = currentPlayer.getPutCard();
+		Card putCard = currentPlayer.getPutCard().getCard();
 		for (Player p : table.getUsers()) 
 		{
 			NotifyPlayerPutCard message = 
@@ -158,7 +158,7 @@ public class TableMessageSender {
 	{
 		//当前玩家
 		Player currentPlayer = table.getCurrentPlayer();
-		Card   card          = currentPlayer.getOutCard();
+		Card   card          = currentPlayer.getOutCard().getCard();
 		NotifyPlayerPutCard message = 
 				new NotifyPlayerPutCard(Cmd.Notify.PLAYER_OUT_CARD, currentPlayer.getId(), card);
 		for (Player p : table.getUsers()) 
@@ -183,7 +183,8 @@ public class TableMessageSender {
 	}
 	
 	/**
-	 * 摸牌后可进行的操作(杠、胡操作),只发送给玩家本身,其他玩家不发
+	 * 摸牌后可进行的操作(杠、胡操作),只发送给玩家本身,其他玩家不发,
+	 * 并且这个时间不单独计算响应时间,因为如果单独算时间,其他玩家就知道你可能有杠或者是可胡了.
 	 * */
 	public void sendWaitResponseAfterPutCard(Table table)
 	{

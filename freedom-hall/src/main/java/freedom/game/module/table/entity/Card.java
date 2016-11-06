@@ -33,7 +33,7 @@ public class Card implements Comparable<Card>{
 	public void setValue(int value) {
 		this.value = value;
 	}
-	private String colorString()
+	public String colorString()
 	{
 		if(color == COLOR_TONG)
 			return value + "筒";

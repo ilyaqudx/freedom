@@ -12,7 +12,7 @@ import freedom.game.module.room.message.EntryRoomMessage.Out;
 import freedom.game.module.room.sender.TableMessageSender;
 import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
-import freedom.game.module.table.entity.Table.Scene;
+import freedom.game.module.table.entity.TableScene;
 import freedom.hall.Cmd.Req;
 import freedom.hall.Cmd.Res;
 import freedom.socket.command.AbstractCommand;
@@ -47,7 +47,7 @@ public class EntryRoomCommand extends AbstractCommand<EntryRoomMessage> {
 					final Table table = roomManager.entryRoom(player,roomType);
 					if(null != table)
 					{
-						Scene scene = table.getScene();
+						TableScene scene = table.getScene();
 						Out out = new Out(scene);
 						msg.setOut(out).setResCmd(Res.ENTRY_ROOM);
 						//牌桌通知消息

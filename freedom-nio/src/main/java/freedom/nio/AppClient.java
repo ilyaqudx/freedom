@@ -45,13 +45,23 @@ public class AppClient {
     +"至于万兽录天榜的那些存在...”莫师声音顿了顿，旋即笑道：“恐怕就算是大千世界中的那些至尊级别的超级大人物，都不敢轻易的对它们出手。"
 										+ "灵兽分高中低三级，北灵之原外围，大多都是低级灵兽，但即便如此，你们也必须联手方才能够对付。"
 										+ "看来灵路没我想的那么美好，还好我没去，不然恐怕连骨头都不会剩下。”唐芊儿有点心悸的道，她实在无法想象，一个连信任都不存在的地方，究竟该过得如何的提心吊胆。";
-								byte[] data = msg.getBytes();
+								StringBuffer sb = new StringBuffer();
+								for (int i = 0; i < 512; i++) 
+								{
+									sb.append(msg);
+								}
+								byte[] data = sb.toString().getBytes();
 
 								ByteBuffer buffer = ByteBuffer.allocate(data.length+4);
 								buffer.putInt(data.length);
 								buffer.put(data);
 								buffer.flip();
-								socket.write(buffer);
+								while(buffer.hasRemaining())
+								{
+									int writen = socket.write(buffer);
+									//System.out.println(writen);
+									//Thread.sleep(1000);
+								}
 							}
 						}
 					}

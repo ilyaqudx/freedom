@@ -2,7 +2,7 @@ package freedom.game.module.room.message;
 
 import freedom.game.module.room.message.EntryRoomMessage.In;
 import freedom.game.module.room.message.EntryRoomMessage.Out;
-import freedom.game.module.table.entity.Table.Scene;
+import freedom.game.module.table.entity.TableScene;
 import freedom.socket.command.CommandMessage;
 
 public class EntryRoomMessage extends CommandMessage<In,Out> {
@@ -30,19 +30,22 @@ public class EntryRoomMessage extends CommandMessage<In,Out> {
 		
 	}
 	
-	public static final class Out{
-		private Scene scene;
+	public static final class Out
+	{
+		private TableScene scene;
 
-		public Out(Scene scene) {
-			super();
+		public Out(TableScene scene) 
+		{
 			this.scene = scene;
 		}
 
-		public Scene getScene() {
+		public TableScene getScene()
+		{
 			return scene;
 		}
 
-		public void setScene(Scene scene) {
+		public void setScene(TableScene scene)
+		{
 			this.scene = scene;
 		}
 		

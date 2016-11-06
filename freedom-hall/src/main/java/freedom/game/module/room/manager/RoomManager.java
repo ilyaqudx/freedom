@@ -49,7 +49,7 @@ public class RoomManager {
 		{
 			if(table.getSeat())
 			{
-				table.sitdown(player);
+				table.getLogic().sitdown(player);
 				userInTable.put(player.getId(), table);
 				return table;
 			}

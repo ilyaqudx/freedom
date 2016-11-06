@@ -122,7 +122,7 @@ public class NioProcessor implements IoProcessor,Runnable {
 	private void read(IoSession session)
 	{
 		
-		ByteBuffer buffer = ByteBuffer.allocate(4096);
+		ByteBuffer buffer = ByteBuffer.allocate(16384);
 		int ret = 0;
 		int readBytes = 0;
 		try {

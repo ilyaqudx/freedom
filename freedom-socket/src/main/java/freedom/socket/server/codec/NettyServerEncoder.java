@@ -2,6 +2,7 @@
 package freedom.socket.server.codec;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 
 import freedom.socket.server.message.Response;
 import io.netty.buffer.ByteBuf;
@@ -16,7 +17,7 @@ public class NettyServerEncoder extends MessageToByteEncoder<Object> {
 	{
 		if(msg instanceof Response)
 		{
-			byte[] buffer = JSON.toJSONString(msg).getBytes();
+			byte[] buffer = JSON.toJSONString(msg,SerializerFeature.DisableCircularReferenceDetect).getBytes();
 			out.writeInt(buffer.length);
 			out.writeBytes(buffer);
 			System.out.println("返回数据 : " + JSON.toJSONString(msg));

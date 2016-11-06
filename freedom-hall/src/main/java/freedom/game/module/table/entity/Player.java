@@ -24,11 +24,11 @@ public class Player {
 	private List<Card> handCard = new ArrayList<Card>();
 	private LinkedList<List<Card>> pengCardList = new LinkedList<List<Card>>();
 	private LinkedList<List<Card>> gangCardList = new LinkedList<List<Card>>();
-	private List<Card> putCardList  = new ArrayList<Card>();
-	private List<Card> outCardList  = new ArrayList<Card>();
+	private List<InCardInfo> putCardList  = new ArrayList<InCardInfo>();
+	private List<OutCardInfo> outCardList  = new ArrayList<OutCardInfo>();
 	private int selectLackColor;
-	private Card putCard;
-	private Card outCard;
+	private InCardInfo  putCard;
+	private OutCardInfo outCard;
 	private boolean gangFlag;//是否是杠牌后的操作(杠摸牌-杠上花,杠后打-杠上炮)
 	private Card huCard;
 	private Player dianPaoPlayer;
@@ -66,10 +66,12 @@ public class Player {
 	}
 	public boolean hasOpt()
 	{
+		//此处在玩家进行响应时,主逻辑循环将操作消除了.
 		return !this.opts.isEmpty();
 	}
 	public boolean hasOpt(int opt)
 	{
+		System.out.println("");
 		if (hasOpt()) {
 			for (Operator o : opts) 
 				if(o.getOpt().ordinal() == opt)
@@ -113,9 +115,10 @@ public class Player {
 
 	public void putCard(Card card)
 	{
-		this.putCard = card;
+		this.putCard = new InCardInfo(id, card, false);
 		this.handCard.add(card);
 		Collections.sort(handCard);
+		putCardList.add(putCard);
 	}
 	
 	public Card outCard()
@@ -127,23 +130,22 @@ public class Player {
 	
 	public void outCard(Card card,boolean gangFlag)
 	{
-		this.outCard = card;
+		this.outCard = new OutCardInfo(id, card, gangFlag);
 		boolean remove = handCard.remove(card);
-		System.out.println("本家出牌删除出牌结果: " + remove + " : " + card);
-		this.gangFlag = gangFlag;
+		this.outCardList.add(new OutCardInfo(id, card, gangFlag));
 	}
 	
 	
-	public Card getPutCard() {
+	public InCardInfo getPutCard() {
 		return putCard;
 	}
-	public void setPutCard(Card putCard) {
+	public void setPutCard(InCardInfo putCard) {
 		this.putCard = putCard;
 	}
-	public Card getOutCard() {
+	public OutCardInfo getOutCard() {
 		return outCard;
 	}
-	public void setOutCard(Card outCard) {
+	public void setOutCard(OutCardInfo outCard) {
 		this.outCard = outCard;
 	}
 	public boolean isSelectedLackColor()
@@ -193,18 +195,6 @@ public class Player {
 	}
 	public void setGangCardList(LinkedList<List<Card>> gangCardList) {
 		this.gangCardList = gangCardList;
-	}
-	public List<Card> getPutCardList() {
-		return putCardList;
-	}
-	public void setPutCardList(List<Card> putCardList) {
-		this.putCardList = putCardList;
-	}
-	public List<Card> getOutCardList() {
-		return outCardList;
-	}
-	public void setOutCardList(List<Card> outCardList) {
-		this.outCardList = outCardList;
 	}
 	public Player()
 	{

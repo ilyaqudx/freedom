@@ -51,7 +51,7 @@ public class CardUtil {
 		List<Operator> gang = canGangByPutCard(p);
 		List<Operator> opts = new ArrayList<Operator>();
 		if(hu)
-			opts.add(new Operator(OPT.HU,p.getPutCard(),true,gangFlag ? Operator.MARK_GANG_SHANG_HUA : Operator.MARK_ZI_MO));
+			opts.add(new Operator(OPT.HU,p.getPutCard().getCard(),true,gangFlag ? Operator.MARK_GANG_SHANG_HUA : Operator.MARK_ZI_MO));
 		if(!gang.isEmpty())
 			opts.addAll(gang);
 		p.setOpts(opts);
@@ -59,13 +59,13 @@ public class CardUtil {
 	}
 	
 	/**
-	 * 计算可响应玩家
+	 * 计算打牌后可响应玩家
 	 * */
-	public static final List<Player> hasResponse(Table table)
+	public static final List<Player> hasResponseAfterOut(Table table)
 	{
 		Player currentPlayer = table.getCurrentPlayer();
-		boolean gangFlag = currentPlayer.isGangFlag();
-		Card outCard = currentPlayer.getOutCard();
+		boolean gangFlag = currentPlayer.getOutCard().isGang();
+		Card outCard = currentPlayer.getOutCard().getCard();
 		List<Player> responsePlayers = new ArrayList<Player>();
 		for (Player p : table.getUsers()) 
 		{
@@ -78,9 +78,7 @@ public class CardUtil {
 			boolean peng = gang ? true : canPeng(handCard, outCard);
 			List<Operator> opts = new ArrayList<Operator>();
 			if(hu)
-			{
 				opts.add(new Operator(OPT.HU,outCard,false,gangFlag ? Operator.MARK_GANG_SHANG_PAO : Operator.MARK_DIAN_PAO));
-			}
 			if(gang)
 				opts.add(new Operator(OPT.GANG, outCard ,false,Operator.MARK_ZHI_GANG));
 			if(peng)
@@ -347,10 +345,10 @@ public class CardUtil {
 		if(null != outCard)
 			tempHandCard.add(outCard);
 		Collections.sort(tempHandCard);
-		for (Card card : tempHandCard)
+		/*for (Card card : tempHandCard)
 		{
 			System.out.println(card);
-		}
+		}*/
 		
 		if(count == 2){
 			if(sameCard(tempHandCard.get(0), tempHandCard.get(1)))
@@ -418,7 +416,7 @@ public class CardUtil {
 					
 					if(checkCard.size() == 0){
 						//check success 
-						System.out.println("牌数量为 0 :成功");
+						//System.out.println("牌数量为 0 :成功");
 						return true;
 					}
 					
@@ -427,7 +425,7 @@ public class CardUtil {
 					}
 				}
 			}else{
-				System.out.println("没有找到将牌,直接 失败");
+				//System.out.println("没有找到将牌,直接 失败");
 				return false;
 			}
 		}

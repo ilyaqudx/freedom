@@ -129,7 +129,6 @@ public class Player {
 	{
 		this.outCard = card;
 		boolean remove = handCard.remove(card);
-		System.out.println("本家出牌删除出牌结果: " + remove + " : " + card);
 		this.gangFlag = gangFlag;
 	}
 	

@@ -8,6 +8,7 @@ import freedom.game.module.room.message.ReadyMessage;
 import freedom.game.module.room.sender.TableMessageSender;
 import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
+import freedom.game.module.table.state.WaitPlayerState;
 import freedom.hall.Cmd;
 import freedom.socket.command.AbstractCommand;
 import freedom.socket.command.LogicException;
@@ -24,9 +25,9 @@ public class ReadyCommand extends AbstractCommand<ReadyMessage> {
 	{
 		long playerId = msg.getIn().getUserId();
 		Table table = roomManager.getTable(playerId);
-		if(table.getState() == Table.State.INIT)
+		if(table.getState() instanceof WaitPlayerState)
 		{
-			Player player = table.ready(playerId);
+			Player player = table.getLogic().ready(playerId);
 			msg.setResCmd(Cmd.Res.READY);
 			sender.sendReadyMessage(player, table);
 		}else

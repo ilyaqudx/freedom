@@ -9,8 +9,8 @@ public class Card implements Comparable<Card>{
 	private int color;
 	private int value;
 	public static final int COLOR_TONG = 1,COLOR_TIAO = 2,COLOR_WAN = 3;
-	public Card(int id, int color, int value) {
-		super();
+	public Card(int id, int color, int value)
+	{
 		this.id = id;
 		this.color = color;
 		this.value = value;
@@ -32,6 +32,10 @@ public class Card implements Comparable<Card>{
 	}
 	public void setValue(int value) {
 		this.value = value;
+	}
+	public int getCode()
+	{
+		return color * value;
 	}
 	public String colorString()
 	{

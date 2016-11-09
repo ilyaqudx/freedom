@@ -1,8 +1,10 @@
 package freedom.game.module.table;
 
+import freedom.game.module.table.entity.Operator;
 import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
 import freedom.game.module.table.state.State;
+import freedom.socket.command.LogicException;
 
 public interface Logic {
 
@@ -37,4 +39,12 @@ public interface Logic {
 	public void nextPlayer(Player nextPlayer, State state);
 
 	public long getLastInTime();
+
+	public void peng(Player player,Operator operator)throws LogicException;
+	
+	public void gang(Player player,Operator operator)throws LogicException;
+	
+	public void hu(Player player,Operator operator)throws LogicException;
+	
+	public void guo(boolean isSelf)throws LogicException;
 }

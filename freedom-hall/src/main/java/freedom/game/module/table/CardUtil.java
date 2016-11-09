@@ -102,6 +102,10 @@ public class CardUtil {
 		
 		List<Operator> gangOperator = new ArrayList<Operator>();
 		//暗杠
+		/*handCard.stream().collect(Collectors.groupingBy(Card::getCode))
+		.entrySet().stream().filter(e -> e.getValue().size() == 4).map(e -> e.getValue())
+		.forEach(l -> gangOperator.add(new Operator(OPT.GANG, l.get(0), true, Operator.MARK_AN_GANG)));*/
+		//碰杠
 		for (int i = 1; i < handCard.size(); i++) 
 		{
 			if(sameCard(handCard.get(i), c))
@@ -138,32 +142,12 @@ public class CardUtil {
 	
 	private static final boolean canGangByOutCard(List<Card> handCard,Card outCard)
 	{
-		int count = 0;
-		for (Card card : handCard) 
-		{
-			if(sameCard(card, outCard))
-			{
-				count++;
-				if(count == 3)
-					break;
-			}
-		}
-		return count == 3;
+		return handCard.stream().filter(c -> sameCard(c, outCard)).count() == 3;
 	}
 	
 	private static final boolean canPeng(List<Card> handCard,Card outCard)
 	{
-		int count = 0;
-		for (Card card : handCard) 
-		{
-			if(sameCard(card, outCard))
-			{
-				count++;
-				if(count == 2)
-					break;
-			}
-		}
-		return count == 2;
+		return handCard.stream().filter(c -> sameCard(c, outCard)).count() >= 2;
 	}
 
 	public static final int getCardFan(GameResult result)
@@ -460,6 +444,8 @@ public class CardUtil {
 		return true;
 		
 	}
+	
+	
 	
 	public static final class GameResult
 	{

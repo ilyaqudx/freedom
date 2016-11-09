@@ -3,14 +3,20 @@ package freedom.game.module.table;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.Lists;
 
 import freedom.common.constants.Consts;
+import freedom.common.kit.LogKit;
 import freedom.game.GameManager;
 import freedom.game.module.room.sender.TableMessageSender;
 import freedom.game.module.table.entity.Card;
+import freedom.game.module.table.entity.Operator;
 import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
 import freedom.game.module.table.state.State;
+import freedom.socket.command.LogicException;
 
 public class GameLogic implements Logic {
 
@@ -129,18 +135,8 @@ public class GameLogic implements Logic {
 	
 	public Player ready(long playerId)
 	{
-		for (Player p : table.getUsers()) 
-		{
-			if(p.getId() == playerId)
-			{
-				p.setReady(Consts.TRUE);
-				return p;
-			}
-		}
-		return null;
+		return table.getUsers().stream().filter(p -> p.getId() == playerId).peek(p -> p.setReady(Consts.TRUE)).findFirst().get();
 	}
-	
-	
 	
 	public void nextPlayerPutCard()
 	{
@@ -176,12 +172,7 @@ public class GameLogic implements Logic {
 	
 	public boolean hasRealPlayer()
 	{
-		for (Player player : table.getUsers()) 
-		{
-			if(player.getRobot() == Consts.FALSE)
-				return true;
-		}
-		return false;
+		return table.getUsers().stream().anyMatch(p -> p.getRobot() == Consts.FALSE);
 	}
 	
 	public void timeout(int timeout)
@@ -229,13 +220,8 @@ public class GameLogic implements Logic {
 	}
 	public void resetOpts()
 	{
-		for (Player p : table.getUsers()) 
-		{
-			if(p.hasOpt())
-			{
-				p.getOpts().clear();
-			}
-		}
+		table.getUsers().stream().filter(p -> p.hasOpt()).forEach(p -> p.getOpts().clear());
+		table.responseList.clear();
 	}
 	public long getLastInTime() {
 		return lastInTime;
@@ -243,4 +229,168 @@ public class GameLogic implements Logic {
 	public void setLastInTime(long lastInTime) {
 		this.lastInTime = lastInTime;
 	}
+	
+	public void peng(Player player,Operator operator)
+	{
+		//没有从打牌者OUT中删除被碰的牌
+		Card outCard = operator.getTarget();
+		List<Card> pengGroup = player.getTargetHandCardList(outCard);
+		player.removeTargetHandCard(pengGroup);
+		pengGroup.add(outCard);
+		player.getPengCardList().add(pengGroup);
+		//发送碰牌通知
+		GameManager.context.getBean(TableMessageSender.class).sendPengNotify(table, player);
+		table.getLogic().nextPlayer(player, table.OUT_CARD);
+	}
+
+	@Override
+	public void gang(Player player,Operator operator)throws LogicException
+	{
+		List<Card> gangGroup = null;
+		if(operator.isSelf())
+		{
+			//获取杠牌类型
+			int  mark = operator.getMark();
+			if(mark == Operator.MARK_AN_GANG)
+				gangGroup = anGang(player, operator);
+			else if(mark == Operator.MARK_PENG_GANG)
+				gangGroup = pengGang(player, operator);
+		}
+		else
+			gangGroup = zhiGang(player,operator);
+
+		//杠牌成功
+		//发送杠牌通知
+		GameManager.context.getBean(TableMessageSender.class).sendGangNotify(table, player,operator,gangGroup);
+		player.setGangFlag(true);
+		table.getLogic().nextPlayer(player, table.PUT_CARD);
+	}
+	
+	
+	/**直杠(手上有3张,其他玩家打一张杠)
+	 * @param player
+	 * @param operator
+	 * @return
+	 */
+	private List<Card> zhiGang(Player player,Operator operator) throws LogicException
+	{
+		//其他玩家打牌,手上必然有3张
+		LogKit.info("开始处理直杠逻辑",this.getClass());
+		Card outCard = operator.getTarget();
+		List<Card> gangGroup = player.getTargetHandCardList(outCard);
+		if(gangGroup.size() == 3)
+		{
+			LogKit.info("成功找到要杠的牌,从手牌中删除这3张牌",this.getClass());
+			player.removeTargetHandCard(gangGroup);
+			gangGroup.add(outCard);
+			LogKit.info(String.format("【%s】直杠%s",player.getName(),outCard.colorString()),this.getClass());
+		}
+		return gangGroup;
+	}
+	
+	/**
+	 * 已碰的牌,再摸一张
+	 * */
+	private List<Card> pengGang(Player player,Operator operator)throws LogicException
+	{
+		//检查碰杠
+		/*Card gangCard = operator.getTarget();
+		for (List<Card> gangGroup : player.getPengCardList()) 
+		{
+			if(gangGroup.size() == 3 && CardUtil.sameCard(gangGroup.get(0), gangCard))
+			{
+				LogKit.info(String.format("【%s】巴杠%s",player.getName(),gangCard.colorString()),this.getClass());
+				gangGroup.add(gangCard);
+				//处理巴杠
+				player.getHandCard().remove(gangCard);
+				
+				return gangGroup;
+			}
+		}*/
+		List<Card> gangGroup = player.getTargetPengOrGangCard(operator.getTarget());
+		Card handCard = player.getTargetHandCard(operator.getTarget());
+		player.removeTargetHandCard(Lists.newArrayList(handCard));
+		gangGroup.add(handCard);
+		LogKit.info(String.format("【%s】巴杠%s",player.getName(),handCard.colorString()),this.getClass());
+		return gangGroup;
+	}
+	
+	/**
+	 * 手上有4张牌
+	 * */
+	private List<Card> anGang(Player player,Operator operator)throws LogicException
+	{
+		//处理暗杠
+		Card gangCard = operator.getTarget();
+		//找到4张杠牌
+		List<Card> gangGroup = player.getTargetHandCardList(gangCard);
+		//从手牌中删除杠牌
+		player.removeTargetHandCard(gangGroup);
+		//加入杠牌组
+		player.getGangCardList().add(gangGroup);
+		
+		LogKit.info(String.format("【%s】暗杠%s",player.getName(),gangCard.colorString()),this.getClass());
+		return gangGroup;
+	}
+	
+	/**
+	 * 胡逻辑
+	 * */
+	public void hu(Player player,Operator operator)throws LogicException
+	{
+		boolean isSelf 			= operator.isSelf();
+		Card 	targetCard 		= operator.getTarget();//isSelf ? currentPlayer.getPutCard().getCard() : currentPlayer.getOutCard().getCard();
+		Player  currentPlayer	= table.getCurrentPlayer();
+		boolean isGangFlag		= currentPlayer.isGangFlag();
+		//再次检查是否能胡
+		boolean hu = CardUtil.canHu(player.getHandCard(),isSelf ? null : targetCard);
+		if(hu)
+		{
+			int huType = isSelf? (isGangFlag ? Player.HU_TYPE_GANG_SHANG_HUA
+					: Player.HU_TYPE_ZI_MO) : (isGangFlag ? Player.HU_TYPE_GANG_SHANG_PAO
+							: Player.HU_TYPE_DIAN_PAO);
+			player.setHu(true,currentPlayer,targetCard,huType);
+			//通知其他玩家有人胡牌
+			GameManager.context.getBean(TableMessageSender.class).sendHuNotify(table,player);
+			//下一个玩家
+			Player nextPlayer = table.getLogic().computeNextPlayer(player);
+			table.getLogic().nextPlayer(nextPlayer, table.PUT_CARD);
+			LogKit.info(String.format("【%s】%s%s", player.getName(),isSelf ? "自摸" : "胡牌",targetCard.colorString()), this.getClass());
+			for (Card card : player.getHandCard()) 
+			{
+				System.err.println(card.colorString());
+			}
+		}
+	}
+	
+	/**
+	 * 过逻辑
+	 * */
+	public void guo(boolean isSelf) throws LogicException
+	{
+		if(isSelf)
+			setState(table.OUT_CARD);
+		else
+			nextPlayerPutCard();
+	}
+	
+	
+	public static void main(String[] args) {
+		Card outCard = new Card(1, 1, 4);
+		List<Card> handCard = Lists.newArrayList(new Card(1, 1, 3),new Card(1, 1, 4),new Card(1, 1, 4),new Card(1, 1, 7),new Card(1, 1, 7));
+		List<Card> pengCard = handCard.stream().filter(c -> CardUtil.sameCard(c, outCard)).collect(Collectors.toList());
+		pengCard.stream().forEach(c -> handCard.remove(c));
+		
+		for (Card card : handCard) {
+			System.out.println(card.colorString());
+		}
+		
+		for (Card card : pengCard) {
+			System.err.println(card);
+		}
+		
+		
+		
+	}
+	
 }

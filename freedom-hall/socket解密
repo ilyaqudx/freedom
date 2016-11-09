@@ -1,0 +1,29 @@
+
+
+Account 
+	dwPlazaVersion  = unsigned 32
+	cbValidateFlags = 0x01 | 0x02
+	szAccounts      = char[32]
+	szPassword      = char[33]
+	
+	
+socket send接口定义
+
+send(mainCmd,subCmd,data,dataLength)
+
+数据类型   字节
+byte   1
+word   2
+TCP_Head{
+	TCP_INFO{
+		byte cbDataKind  //数据类型
+		byte cbCheckCode //交验字段
+		word wPacketSize //数据大小
+	}
+	TCP_Command{
+		word wMainCmdID  //主命令
+		word wSubCmdID   //子命令
+}
+
+
+

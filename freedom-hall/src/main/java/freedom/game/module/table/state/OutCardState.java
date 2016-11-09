@@ -10,6 +10,7 @@ import freedom.game.module.room.sender.TableMessageSender;
 import freedom.game.module.table.CardUtil;
 import freedom.game.module.table.entity.Card;
 import freedom.game.module.table.entity.Player;
+import freedom.game.module.table.entity.ResponseInfo;
 import freedom.game.module.table.entity.Table;
 
 /**
@@ -41,15 +42,28 @@ public class OutCardState extends GameState {
 				logic.nextPlayerPutCard();
 			else
 			{
+				addResponseInfo(responsePlayers);
 				//发送等待响应消息
 				GameManager.context.getBean(TableMessageSender.class)
 				.sendWaitResponseAfterOutCard(table);
 				logic.setState(table.RESPONSE);
+				table.responseType = Table.RESPONSE_TYPE_OUT;
 			}
-				
 		}
 	
 
+	}
+
+	public void addResponseInfo(List<Player> responsePlayers) {
+		for (Player player : responsePlayers) 
+		{
+			ResponseInfo responseInfo = new ResponseInfo();
+			responseInfo.setPlayerId(player.getId());
+			responseInfo.setTargetPlayerId(table.getCurrentPlayer().getId());
+			responseInfo.setResponseType(Table.RESPONSE_TYPE_OUT);
+			responseInfo.setOpts(player.optList2Map());
+			table.responseList.put(player.getId(), responseInfo);
+		}
 	}
 
 }

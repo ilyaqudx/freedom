@@ -4,10 +4,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.BeanUtils;
 
 import freedom.common.moudle.user.User;
+import freedom.game.module.table.CardUtil;
+import freedom.game.module.table.entity.Operator.OPT;
 
 public class Player {
 
@@ -175,6 +179,11 @@ public class Player {
 	public void setReady(int ready) {
 		this.ready = ready;
 	}
+	
+	public Map<OPT,Operator> optList2Map()
+	{
+		return opts.stream().collect(Collectors.toMap(Operator::getOpt,o -> o));
+	}
 
 	
 
@@ -256,6 +265,37 @@ public class Player {
 	public String toString() {
 		return "Player [id=" + id + ", name=" + name + ", sex=" + sex
 				+ ", seat=" + seat + ", gold=" + gold + ", head=" + head + "]";
+	}
+	
+	/**
+	 * 获取指定的手牌
+	 * */
+	public Card getTargetHandCard(Card targetCard)
+	{
+		return handCard.stream().filter(c -> CardUtil.sameCard(c, targetCard)).findFirst().get();
+	}
+	
+	/**
+	 * 获取指定的手牌
+	 * */
+	public List<Card> getTargetHandCardList(Card targetCard)
+	{
+		return handCard.stream().filter(c -> CardUtil.sameCard(c, targetCard)).collect(Collectors.toList());
+	}
+	/**
+	 * 获取指定碰牌组/杠牌组
+	 * */
+	public List<Card> getTargetPengOrGangCard(Card targetCard)
+	{
+		return pengCardList.stream().filter(group -> CardUtil.sameCard(targetCard, group.stream().findFirst().get())).findFirst().get();
+	}
+	
+	/**
+	 * 从手牌中删除指定的牌集
+	 * */
+	public void removeTargetHandCard(List<Card> removeCards)
+	{
+		removeCards.stream().forEach(c -> handCard.remove(c));
 	}
 	
 }

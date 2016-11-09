@@ -1,16 +1,9 @@
 package freedom.game.module.table.command;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import freedom.game.module.room.manager.RoomManager;
-import freedom.game.module.room.sender.TableMessageSender;
-import freedom.game.module.table.CardUtil;
-import freedom.game.module.table.entity.Card;
-import freedom.game.module.table.entity.Operator;
 import freedom.game.module.table.entity.Operator.OPT;
 import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
@@ -24,8 +17,6 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 
 	@Autowired
 	private RoomManager roomManager;
-	@Autowired
-	private TableMessageSender sender;
 	@Override
 	public ResponseOptMessage execute(ResponseOptMessage msg) throws Exception 
 	{
@@ -41,19 +32,26 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 		{
 			Player player = table.getPlayer(playerId);
 			boolean isSelf = table.getCurrentPlayer().getId() == player.getId();
-			if(player.hasOpt(opt))
+			try {
+				if(player.hasOpt(opt))
+				{
+					if(opt == OPT.HU.ordinal())
+						handleHu(table, player);
+					else if(opt == OPT.GANG.ordinal())
+						handleGang(cardId, table, player);
+					else if(opt == OPT.PENG.ordinal())
+						handlePeng(table, player);
+					else if(opt == OPT.GUO.ordinal())
+						handleGuo(table, isSelf);
+					table.getLogic().resetOpts();
+				}
+				else if(opt != OPT.GUO.ordinal())
+					msg.setEx(new LogicException(-1, "玩家不能进行此操作"));
+			} 
+			catch (LogicException e)
 			{
-				if(opt == OPT.HU.ordinal())
-					handleHu(msg, table, player, isSelf);
-				else if(opt == OPT.GANG.ordinal())
-					handleGang(cardId, table, player, isSelf);
-				else if(opt == OPT.PENG.ordinal())
-					handlePeng(table, player);
-				else if(opt == OPT.GUO.ordinal())
-					handleGuo(table, isSelf);
+				msg.setEx(e);
 			}
-			else
-				msg.setEx(new LogicException(-1, "玩家不能进行此操作"));
 		}
 		
 		return msg;
@@ -71,52 +69,31 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 	
 	/**
 	 * 碰逻辑
+	 * @throws LogicException 
 	 * */
-	private void handlePeng(Table table, Player player) {
-		for (Operator o : player.getOpts()) 
-		{
-			if(o.getOpt() == OPT.PENG)
-			{
-				//没有从打牌者OUT中删除被碰的牌
-				Card outCard = table.getCurrentPlayer().getOutCard().getCard();
-				List<Card> pengGroupItem = new ArrayList<Card>(3);
-				player.getPengCardList().add(pengGroupItem);
-				pengGroupItem.add(outCard);
-				List<Card> handCard  = player.getHandCard(); 
-				for (int i = handCard.size() - 1; i >= 0; i -- )
-				{
-					Card c = handCard.get(i);
-					if(CardUtil.sameCard(c, outCard))
-					{
-						pengGroupItem.add(c);
-						handCard.remove(i);
-						if(pengGroupItem.size() == 3)
-							break;
-					}
-				}
-				
-				//碰牌成功
-				//发送碰牌通知
-				sender.sendPengNotify(table, player);
-				table.getLogic().nextPlayer(player, table.OUT_CARD);
-				//发送等待打牌通知
-				//--发现原来没有通知
-			}
-		}
+	private void handlePeng(Table table, Player player) throws LogicException
+	{
+		table.getLogic().peng(player,player.getOpts().stream().filter(o -> o.getOpt() == OPT.PENG).findFirst().get());
 	}
 	
 	/**
 	 * 杠逻辑
 	 * @throws LogicException 
 	 * */
-	private void handleGang(int cardId, Table table, Player player, boolean isSelf) throws LogicException {
-		for (Operator o : player.getOpts()) 
+	private void handleGang(int cardId, Table table, Player player) throws LogicException
+	{
+		table.getLogic().gang(player, player.getOpts().stream().filter(o -> o.getOpt() == OPT.GANG && o.getTarget().getId() == cardId).findFirst().get());
+		
+		/*for (Operator o : player.getOpts()) 
 		{
 			if(o.getOpt() == OPT.GANG)
 			{
 				//找到了杠牌,BUG-1应该比较的颜色和值,应该是客户端传上来的牌的ID不对(JSON序列化引起的循环引用,没有赋值.需要解决)
 				if(o.getTarget().getId() == cardId)
 				{
+					table.getLogic().gang(player, o);
+					break;
+					
 					if(isSelf)
 					{
 						//获取杠牌
@@ -208,32 +185,16 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 					}
 				}
 			}
-		}
+		}*/
 	}
 	
 	/**
 	 * 胡逻辑
+	 * @throws LogicException 
 	 * */
-	private void handleHu(ResponseOptMessage msg, Table table, Player player, boolean isSelf) {
-		Player currentPlayer = table.getCurrentPlayer();
-		Card targetCard = isSelf ? currentPlayer.getPutCard().getCard() : currentPlayer.getOutCard().getCard();
-		boolean isGangFlag = currentPlayer.isGangFlag();
-		//再次检查是否能胡
-		boolean hu = 
-				CardUtil.canHu(player.getHandCard(),isSelf ? null : targetCard);
-		if(hu)
-		{
-			int huType = isSelf? (isGangFlag ? Player.HU_TYPE_GANG_SHANG_HUA
-					: Player.HU_TYPE_ZI_MO) : (isGangFlag ? Player.HU_TYPE_GANG_SHANG_PAO
-							: Player.HU_TYPE_DIAN_PAO);
-			player.setHu(true,currentPlayer,targetCard,huType);
-			//通知其他玩家有人胡牌
-			sender.sendHuNotify(table,player);
-			//下一个玩家
-			Player nextPlayer = table.getLogic().computeNextPlayer(player);
-			table.getLogic().nextPlayer(nextPlayer, table.PUT_CARD);
-		}else
-			msg.setEx(new LogicException(-1, "操作不合法"));
+	private void handleHu(Table table,Player player) throws LogicException
+	{
+		table.getLogic().hu(player, player.getOpts().stream().filter(o -> OPT.HU == o.getOpt()).findFirst().get());
 	}
 
 }

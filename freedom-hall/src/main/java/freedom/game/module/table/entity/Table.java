@@ -1,7 +1,9 @@
 package freedom.game.module.table.entity;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
@@ -40,6 +42,12 @@ public class Table {
 	public int timeout;
 	public volatile long lastInTime;
 	public volatile long delayStart = 10000;
+	//响应类型(1-摸牌响应,2-打牌响应)
+	public int responseType;
+	//一轮中可响应列表
+	public Map<Long, ResponseInfo> responseList = new HashMap<Long, ResponseInfo>();
+	
+	public static final int RESPONSE_TYPE_IN = 1,RESPONSE_TYPE_OUT = 2;
 	
 	public freedom.game.module.table.state.State WAIT_PLAYER,START_GAME,SELECT_LACK,PUT_CARD,RESPONSE,OUT_CARD,SETTLEMENT,DELAY;
 	

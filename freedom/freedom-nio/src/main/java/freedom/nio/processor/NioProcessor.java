@@ -10,6 +10,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import freedom.nio.Channel;
 import freedom.nio.IoSession;
@@ -24,6 +25,10 @@ public class NioProcessor implements IoProcessor,Runnable {
 	 * 新加入的连接
 	 * */
 	private Queue<IoSession> newSessions = new ConcurrentLinkedQueue<IoSession>();
+	/**
+	 * 待发连接
+	 * */
+	private Queue<IoSession> writingSessions = new LinkedBlockingQueue<IoSession>();
 	
 	
 	private ExecutorService executors;
@@ -219,6 +224,12 @@ public class NioProcessor implements IoProcessor,Runnable {
 			keys.remove();
 		}
 		
+	}
+
+	@Override
+	public void addPendingWriteSession(IoSession session)
+	{
+		writingSessions.offer(session);
 	}
 	
 }

@@ -17,11 +17,18 @@ public class NioHandler implements IoHandler {
 	{
 		// TODO Auto-generated method stub
 		//System.out.println(String.format("%d session handler message : %s", session.getId(),msg));
-		try {
+		try 
+		{
+			char[] en = new char[]{'a','b','c','d','e','f'};
 			Map<String,Object> map = new HashMap<String,Object>();
-			map.put("name", "张三");
-			map.put("age", 10);
-			session.write(map);
+			char[] arr = new char[1024000];
+			for (int i = 0; i < 10240; i++) 
+			{
+				arr[i] = en[i % 6];
+			}
+			//map.put("name", new String(arr));
+			//map.put("age", 10);
+			session.write(new String(arr));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

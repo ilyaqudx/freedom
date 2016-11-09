@@ -8,4 +8,9 @@ public interface IoProcessor {
 	public IoSession getSession(Channel channel);
 	
 	public void registSession(IoSession session);
+
+	/**
+	 * 将加待发送的SESSION
+	 * */
+	public void addPendingWriteSession(IoSession session);
 }

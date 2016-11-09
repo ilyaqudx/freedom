@@ -7,8 +7,13 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+
+import freedom.nio.future.WriteFuture;
+import freedom.nio.processor.IoProcessor;
 
 public class NioSession implements IoSession{
 
@@ -18,9 +23,11 @@ public class NioSession implements IoSession{
 	private SelectionKey key;
 	private Map<String,Object> attrs = new ConcurrentHashMap<String,Object>();
 	public static final String FRAGMENT = "fragment";
+	public static final String PROCESSOR = "processor";
 	private long sessionId;
 	public static final AtomicLong id = new AtomicLong(0);
-	
+	private Queue<WriteRequest> writeRequestQueue = new LinkedBlockingQueue<WriteRequest>();
+	private IoProcessor processor;
 	public NioSession(SocketChannel channel,IoHandler handler,FilterChain filterChain)
 	{
 		this.sessionId      = id.incrementAndGet();
@@ -39,15 +46,18 @@ public class NioSession implements IoSession{
 	 * */
 	public void storeFragment(ByteBuffer buffer)
 	{
-		
 		ByteBuffer fragment = ByteBuffer.allocate(buffer.limit() - buffer.position());
 		fragment.put(buffer.array(), buffer.position(),fragment.capacity());
 		attrs.put(FRAGMENT, fragment);
 	}
 	
-	public void write(Object message)throws IOException
+	public WriteFuture write(Object message)throws IOException
 	{
-		filterChain.fireWrite(message);
+		//如何将FUTURE携带到发送接口,封装一个发送对象WriteRequest
+		WriteFuture writeFuture = new WriteFuture(this);
+		WriteRequest request = new WriteRequest(this, writeFuture, message);
+		filterChain.fireWrite(request);
+		return writeFuture;
 	}
 
 	@Override
@@ -115,8 +125,8 @@ public class NioSession implements IoSession{
 	}
 
 	@Override
-	public void close() throws IOException {
-		// TODO Auto-generated method stub
+	public void close() throws IOException
+	{
 		channel.close();
 	}
 
@@ -124,6 +134,24 @@ public class NioSession implements IoSession{
 	public void clearFragment()
 	{
 		attrs.remove(FRAGMENT);
+	}
+
+	@Override
+	public Queue<WriteRequest> getWriteRequestQueue()
+	{
+		return writeRequestQueue;
+	}
+
+	@Override
+	public IoProcessor getProcessor()
+	{
+		return (IoProcessor) getAttr(PROCESSOR);
+	}
+
+	@Override
+	public void setProcessor(IoProcessor processor)
+	{
+		setAttr(PROCESSOR, processor);
 	}
 	
 	

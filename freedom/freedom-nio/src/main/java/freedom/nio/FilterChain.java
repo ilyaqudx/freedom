@@ -13,7 +13,9 @@ public interface FilterChain {
 	
 	public void fireRead(Object data);
 	
-	public void fireWrite(Object data);
+	public void fireWrite(WriteRequest request);
+	
+	public void fireSent(int len);
 	
 	public List<FilterEntry> getEntries();
 	

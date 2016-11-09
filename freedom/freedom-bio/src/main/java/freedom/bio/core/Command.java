@@ -11,5 +11,5 @@ public interface Command<I,O> {
 		static final short ACCOUNT_LOGON = 2;
 	}
 	
-	public PacketRes execute(byte[] data) throws Exception;
+	public PacketRes execute(IoSession session,byte[] data) throws Exception;
 }

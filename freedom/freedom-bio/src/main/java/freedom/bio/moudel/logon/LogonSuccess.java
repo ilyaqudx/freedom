@@ -3,7 +3,7 @@ package freedom.bio.moudel.logon;
 import freedom.bio.core.StringLen;
 
 public class LogonSuccess implements StringLen {
-	// 注意字段的顺序,一定要严格保证,反射时按照书写顺序进行序列
+	// 鍦ㄥ弽灏勮幏鍙栧瓧娈垫椂涓ユ牸鎸夌収涔﹀啓椤哄簭浠庝笂鑷充笅,浠庡乏鍒板彸渚濇搴忓垪鍖栧拰鍙嶅簭鍒楀寲
 	private short faceId;
 	private int userId, gameId, groupId, customId, userMedal, exp, loveliness,
 			spreaderId;

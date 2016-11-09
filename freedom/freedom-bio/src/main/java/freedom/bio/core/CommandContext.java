@@ -10,19 +10,19 @@ public class CommandContext {
 	public static final CommandContext I = new CommandContext();
 	
 	@SuppressWarnings("rawtypes")
-	private static final Map<Class<? extends Command>,Command> commands = new HashMap<Class<? extends Command>,Command>();
+	private static final Map<String,Command> commands = new HashMap<String,Command>();
 
 	static
 	{
-		addCommand(LogonCommand.class);
+		addCommand(LogonCommand.class,Command.Main.GAME,Command.Sub.ACCOUNT_LOGON);
 	}
 	
 	@SuppressWarnings("rawtypes")
-	private static final void addCommand(Class<? extends Command> clazz)
+	private static final void addCommand(Class<? extends Command> clazz,short main,short sub)
 	{
 		try 
 		{
-			commands.put(clazz,clazz.newInstance());
+			commands.put(String.format("%d%d", main,sub),clazz.newInstance());
 		} 
 		catch (InstantiationException e) 
 		{
@@ -34,8 +34,8 @@ public class CommandContext {
 		}
 	}
 	
-	public Command getCommand(Class<? extends Command> command)
+	public Command getCommand(short main,short sub)
 	{
-		return commands.get(command);
+		return commands.get(String.format("%d%d", main,sub));
 	}
 }

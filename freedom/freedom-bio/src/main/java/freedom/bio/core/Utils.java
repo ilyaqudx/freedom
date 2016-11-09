@@ -16,7 +16,7 @@ public class Utils {
 	public static final PacketHead buildPackageHead(int dataLen)
 	{
 		PacketHead head = new PacketHead();
-		head.setDataKindId((byte) 2);//·µ»ØÖµ±ØĞëÎª2,¿Í»§¶Ë»áÑéÖ¤
+		head.setDataKindId((byte) 2);//åŠ å¯†ç±»å‹å¿…é¡»ä¸º2.å®¢æˆ·ç«¯ä¼šéªŒè¯
 		head.setCheckCode((byte) 1);
 		head.setPacketSize((short)(dataLen + 8));
 		head.setMainCmd((short) 1);

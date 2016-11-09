@@ -1,30 +1,27 @@
 package freedom.bio.core;
 
-import freedom.bio.core.Command.Main;
-import freedom.bio.core.Command.Sub;
-import freedom.bio.moudel.logon.LogonCommand;
-
-
 public class Dispatcher {
 
-	public static final PacketRes dipatch(PacketReq packet)
+	
+	public static final void dipatch(IoSession session,PacketReq packet)
 	{
-		PacketHead head = packet.getHead();
-		if(head.getMainCmd() == Main.GAME)
+		try
 		{
-			if(head.getSubCmd() == Sub.ACCOUNT_LOGON)
+			/* 怎么返回数据给客户端才好(将数据发送给输出线程)
+			 * 需要提供一个可操作写回数据的类
+			 */
+			PacketHead head = packet.getHead();
+			Command command = CommandContext.I.getCommand(head.getMainCmd(),head.getSubCmd());
+			if(null != command)
 			{
-				try 
-				{
-					return CommandContext.I.getCommand(LogonCommand.class).execute(packet.getData());
-				} 
-				catch (Exception e) 
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
+				PacketRes res   = command.execute(session,packet.getData());
+				session.write(res);
+			}else
+				throw new Exception(String.format("Command not found!code : 【%d,%d】", head.getMainCmd(),head.getSubCmd()));
 		}
-		return new PacketRes(Utils.buildPackageHead(0));
+		catch(Exception e) 
+		{
+			e.printStackTrace();
+		}
 	}
 }

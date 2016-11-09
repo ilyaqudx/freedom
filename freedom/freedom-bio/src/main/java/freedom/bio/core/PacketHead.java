@@ -1,7 +1,7 @@
 package freedom.bio.core;
 
 public final class PacketHead {
-	private byte dataKindId, checkCode;
+	private byte dataKindId = 2, checkCode = 1;
 	private short packetSize, mainCmd, subCmd;
 
 	public byte getDataKindId() {

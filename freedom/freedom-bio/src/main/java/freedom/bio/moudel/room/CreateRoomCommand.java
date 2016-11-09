@@ -5,9 +5,9 @@ import freedom.bio.core.AbstractCommand;
 public class CreateRoomCommand extends AbstractCommand<CreateRoom,Object>
 {
 	@Override
-	public void run(CreateRoom in, Object out) throws Exception
+	public Object run(CreateRoom in, Object out) throws Exception
 	{
-		
+		return null;
 	}
 
 	@Override

@@ -1,15 +1,16 @@
-package freedom.nio.codec;
+package freedom.nio.filter;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import freedom.nio.DefaultFilterChain.FilterEntry;
-import freedom.nio.Filter;
 import freedom.nio.IoSession;
 import freedom.nio.NioSession;
 import freedom.nio.WriteRequest;
+import freedom.nio.codec.Codec;
+import freedom.nio.filter.DefaultFilterChain.FilterEntry;
+import freedom.nio.future.WriteFuture;
 
 public class ProtocolCodecFilter implements Filter {
 
@@ -40,7 +41,7 @@ public class ProtocolCodecFilter implements Filter {
 		}
 			
 		int startPosition = 0;
-		ProtocolDecoderOutput output = new ProtocolDecoderOutput();
+		ProtocolDecoderOutput output = getDecoderOutput(session);
 		while(codec.getDecoder().decode(session,buffer, output))
 		{
 			//startPosition == now position 说明根本一个字节数据都没有取,但是还要继续解码,会限入死loop
@@ -89,17 +90,63 @@ public class ProtocolCodecFilter implements Filter {
 	{
 		Object message = request.getMsg();
 		if(message instanceof ByteBuffer)
-			nextFilter.fireWrite(session, (WriteRequest) request.getMsg());
+			nextFilter.fireWrite(session, (WriteRequest) request);
 		else
 		{
 			//?此处如何继续将WriteFuture传递下去?直接WriteRequest或单独写WriteFuture
 			//答案是：过滤器接受的参数就是WriteRequest
-			ProtocolEncoderOutput output = new ProtocolEncoderOutput();
+			ProtocolEncoderOutput output = getEncoderOutput(session);
 			//编码
 			codec.getEncoder().encode(session, message,output);
 			//将编码后的数据继续传递下去
-			output.flush(nextFilter, session);
+			//output.flush(nextFilter, session);
+			if(!output.getQueue().isEmpty())
+			{
+				ByteBuffer buffer = (ByteBuffer) output.getQueue().poll();
+				if(buffer.hasRemaining())
+				{
+					WriteRequest encodedRequest = new WriteRequest(session, new WriteFuture(session),buffer );
+					nextFilter.fireWrite(session, encodedRequest);
+				}
+			}
 		}
+	}
+	
+	public static final String DECODER_OUTPUT = "decoder_output";
+	
+	public static final String ENCODER_OUTPUT = "encoder_output";
+	
+	private ProtocolDecoderOutput getDecoderOutput(IoSession session)
+	{
+		return getAttrPutAbsent(session, DECODER_OUTPUT, ProtocolDecoderOutput.class);
+	}
+	
+	private ProtocolEncoderOutput getEncoderOutput(IoSession session)
+	{
+		return getAttrPutAbsent(session, ENCODER_OUTPUT, ProtocolEncoderOutput.class);
+	}
+	
+	@SuppressWarnings({ "unchecked" })
+	public static final <T> T getAttrPutAbsent(IoSession session,String attr,Class<T> clazz)
+	{
+		T t = (T) session.getAttr(attr);
+		if(null == t)
+		{
+			try 
+			{
+				t = clazz.newInstance();
+				session.setAttr(attr, t);
+			} 
+			catch (InstantiationException e)
+			{
+				e.printStackTrace();
+			} 
+			catch (IllegalAccessException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		return t;
 	}
 	
 	static abstract class AbstractProtocolCodecOutput
@@ -124,7 +171,7 @@ public class ProtocolCodecFilter implements Filter {
 		public abstract void flush(FilterEntry nextFilter, IoSession session);
 	}
 	
-	static final class ProtocolDecoderOutput extends AbstractProtocolCodecOutput
+	public static final class ProtocolDecoderOutput extends AbstractProtocolCodecOutput
 	{
 		public ProtocolDecoderOutput()
 		{
@@ -139,7 +186,7 @@ public class ProtocolCodecFilter implements Filter {
 		}
 	}
 	
-	static final class ProtocolEncoderOutput extends AbstractProtocolCodecOutput
+	public static final class ProtocolEncoderOutput extends AbstractProtocolCodecOutput
 	{
 		public ProtocolEncoderOutput() 
 		{

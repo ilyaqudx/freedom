@@ -8,6 +8,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Queue;
 
+import freedom.nio.filter.FilterChain;
 import freedom.nio.future.WriteFuture;
 import freedom.nio.processor.IoProcessor;
 

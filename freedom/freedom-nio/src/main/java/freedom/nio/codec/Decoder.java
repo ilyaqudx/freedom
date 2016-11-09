@@ -3,7 +3,7 @@ package freedom.nio.codec;
 import java.nio.ByteBuffer;
 
 import freedom.nio.IoSession;
-import freedom.nio.codec.ProtocolCodecFilter.ProtocolDecoderOutput;
+import freedom.nio.filter.ProtocolCodecFilter.ProtocolDecoderOutput;
 
 public interface Decoder {
 

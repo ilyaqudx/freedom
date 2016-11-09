@@ -11,7 +11,10 @@ import java.util.Iterator;
 import java.util.concurrent.Executors;
 
 import freedom.nio.codec.JSONCodec;
-import freedom.nio.codec.ProtocolCodecFilter;
+import freedom.nio.filter.DefaultFilterChain;
+import freedom.nio.filter.FilterChain;
+import freedom.nio.filter.LoggingFilter;
+import freedom.nio.filter.ProtocolCodecFilter;
 import freedom.nio.processor.DefaultIoProcessorPool;
 import freedom.nio.processor.IoProcessor;
 import freedom.nio.processor.IoProcessorPool;

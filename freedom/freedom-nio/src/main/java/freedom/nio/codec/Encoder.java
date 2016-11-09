@@ -1,7 +1,7 @@
 package freedom.nio.codec;
 
 import freedom.nio.IoSession;
-import freedom.nio.codec.ProtocolCodecFilter.ProtocolEncoderOutput;
+import freedom.nio.filter.ProtocolCodecFilter.ProtocolEncoderOutput;
 
 public interface Encoder {
 

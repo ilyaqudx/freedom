@@ -1,8 +1,9 @@
-package freedom.nio;
+package freedom.nio.filter;
 
 import java.util.List;
 
-import freedom.nio.DefaultFilterChain.FilterEntry;
+import freedom.nio.WriteRequest;
+import freedom.nio.filter.DefaultFilterChain.FilterEntry;
 
 
 public interface FilterChain {

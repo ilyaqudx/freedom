@@ -1,6 +1,8 @@
-package freedom.nio;
+package freedom.nio.filter;
 
-import freedom.nio.DefaultFilterChain.FilterEntry;
+import freedom.nio.IoSession;
+import freedom.nio.WriteRequest;
+import freedom.nio.filter.DefaultFilterChain.FilterEntry;
 
 public class LoggingFilter implements Filter {
 

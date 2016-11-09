@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
+import freedom.nio.filter.DefaultFilterChain;
+import freedom.nio.filter.FilterChain;
 import freedom.nio.future.WriteFuture;
 import freedom.nio.processor.IoProcessor;
 

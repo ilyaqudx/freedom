@@ -6,7 +6,7 @@ import com.alibaba.fastjson.JSON;
 
 import freedom.common.kit.Utils;
 import freedom.nio.IoSession;
-import freedom.nio.codec.ProtocolCodecFilter.ProtocolEncoderOutput;
+import freedom.nio.filter.ProtocolCodecFilter.ProtocolEncoderOutput;
 
 public class JSONEncoder implements Encoder {
 

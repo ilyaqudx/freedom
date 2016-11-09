@@ -1,10 +1,13 @@
-package freedom.nio;
+package freedom.nio.filter;
 
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.util.Assert;
+
+import freedom.nio.IoSession;
+import freedom.nio.WriteRequest;
 
 /**
  * 过滤器链(在收到连接请求/有收到到来进行一系列过滤操作)

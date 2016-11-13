@@ -128,7 +128,7 @@ public class Player {
 	public void outCard(Card card,boolean gangFlag)
 	{
 		this.outCard = card;
-		boolean remove = handCard.remove(card);
+		handCard.remove(card);
 		this.gangFlag = gangFlag;
 	}
 	

@@ -30,7 +30,6 @@ public class Table {
 	private volatile State state;
 	private volatile State nextState;
 	private volatile PlayingState playingState;
-	private volatile PlayingState nextPlayingState;
 	private List<Player> users = new ArrayList<Player>();
 	private List<Card> tableCard = new ArrayList<Card>();
 	private Player currentPlayer;

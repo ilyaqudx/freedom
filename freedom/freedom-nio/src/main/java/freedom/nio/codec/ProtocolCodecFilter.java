@@ -154,5 +154,11 @@ public class ProtocolCodecFilter implements Filter {
 			
 		}
 	}
+
+	@Override
+	public void sent(FilterEntry nextFilter, IoSession sesion, Object msg) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }

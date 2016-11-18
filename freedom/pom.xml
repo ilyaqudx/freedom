@@ -99,5 +99,6 @@
 		<module>freedom-nio</module>
 		<module>freedom-pay</module>
 		<module>freedom-bio</module>
+		<module>freedom-secrity</module>
 	</modules>
 </project>

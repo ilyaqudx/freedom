@@ -10,11 +10,11 @@ public class IoSession {
 		this.serverThread = serverThread;
 	}
 	
-	public void write(PacketRes res) 
+	public void write(Object msg) 
 	{
-		if(res == null)
+		if(msg == null)
 			return;
-		serverThread.addPacket(res);
+		serverThread.addPacket(msg);
 	}
 
 }

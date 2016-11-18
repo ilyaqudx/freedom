@@ -82,7 +82,7 @@ public class IOBuffer {
 		return data;
 	}
 	
-	public  final String readCppString(int len) throws IOException
+	public  final String readCppString(int len)
 	{
 		byte[] data = readCppBytes(len);
 		int count = 0;

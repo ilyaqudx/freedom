@@ -7,4 +7,11 @@
   </parent>
   <groupId>freedom-bio</groupId>
   <artifactId>freedom-bio</artifactId>
+  <dependencies>
+  	<dependency>
+  		<groupId>freedom</groupId>
+  		<artifactId>freedom-common</artifactId>
+  		<version>0.0.1</version>
+  	</dependency>
+  </dependencies>
 </project>

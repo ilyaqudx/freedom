@@ -31,7 +31,7 @@ public class TestPay {
 	
 	private static void testAlipay()throws Exception
 	{
-		AlipayPayResult response = createAlipayGoldPayResult();//
+		AlipayPayResult response = createAlipayVipPayResult();//createAlipayGoldPayResult();//
 		/*AlipayOrderHandler.I.validateNotifyResult(new AlipayConfig("2088121006702322","ge8o3rwev3o8zdvkyxoqf1yn583z6ber",
 				"MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCnxj/9qwVfgoUh/y2W89L6BkRAFljhNhgPdyPuBV64bfQNN1PjbCzkIM6qRdKBoLPXmKKMiFYnkd6rAoprih3/PrQEB/VsW8OoM8fxn67UDYuyBTqA23MML9q1+ilIZwBC2AQ2UBVOrFXfFl75p6/B5KsiNG9zpgmLCUYuLkxpLQIDAQAB"),response);
 		

@@ -2,13 +2,14 @@ package freedom.bio;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import freedom.bio.codec.Codec;
+import freedom.bio.codec.HttpCodec;
 import freedom.bio.core.IOBuffer;
 import freedom.bio.core.IoSession;
-import freedom.bio.core.PacketRes;
 
 public class ServerThread{
 
@@ -20,7 +21,7 @@ public class ServerThread{
 	public ServerThread(Socket socket)
 	{
 		this.socket = socket;
-		this.codec  = new Codec(new IoSession(this));
+		this.codec  = new HttpCodec(new IoSession(this));
 	}
 	
 	public void start()
@@ -83,16 +84,15 @@ public class ServerThread{
 						System.arraycopy(data, buffer.pos(), readBuffer, 0, fragment);
 					}
 				} 
-				catch 
-				(IOException e) 
+				catch (IOException e) 
 				{
-					e.printStackTrace();
+					//e.printStackTrace();
 					try 
 					{
-						socket.close();
+						socket.getInputStream().close();
 					} catch (IOException e1) {
 						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						//e1.printStackTrace();
 					}finally{
 						break;
 					}
@@ -105,7 +105,7 @@ public class ServerThread{
 	static final class WriteThread extends SocketThread
 	{
 		
-		public LinkedBlockingQueue<PacketRes> packets = new LinkedBlockingQueue<PacketRes>();
+		public LinkedBlockingQueue<Object> packets = new LinkedBlockingQueue<Object>();
 		
 		public WriteThread(Socket socket, Codec codec)
 		{
@@ -117,19 +117,24 @@ public class ServerThread{
 		{
 			while(socket.isConnected())
 			{
-				try {
-					PacketRes packet = packets.take();
+				try 
+				{
+					Object packet = packets.take();
 					byte[]    data   = codec.encode(packet);
-					socket.getOutputStream().write(data);
+					OutputStream out = socket.getOutputStream();
+					out.write(data);
+					out.flush();
+					System.out.println("数据发送结束 : " + packet);
+					out.close();
 				} 
 				catch (IOException | InterruptedException e) 
 				{
-					e.printStackTrace();
+				}finally {
 					try {
-						socket.close();
-					} catch (IOException e1) {
+						socket.getOutputStream().close();
+					} catch (IOException e) {
 						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						//e.printStackTrace();
 					}
 				}
 			}
@@ -137,7 +142,7 @@ public class ServerThread{
 		
 	}
 
-	public void addPacket(PacketRes res) 
+	public void addPacket(Object res) 
 	{
 		((WriteThread)this.write).packets.offer(res);
 	}

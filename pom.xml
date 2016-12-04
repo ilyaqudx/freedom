@@ -97,5 +97,7 @@
 		<module>freedom-hall</module>
 		<module>freedom-study</module>
 		<module>freedom-nio</module>
+		<module>freedom-security</module>
+		<module>freedom-leader</module>
 	</modules>
 </project>

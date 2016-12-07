@@ -17,6 +17,13 @@ public class QuickSort {
 		}
 	}
 	
+	public static final void sort(Salary[] salarys)
+	{
+		if(null == salarys || salarys.length == 0)
+			return;
+		sort(salarys, 0, salarys.length - 1);
+	}
+	
 	private static final void sort(Salary[] arr,int low,int high)
 	{
 		if(low < high)

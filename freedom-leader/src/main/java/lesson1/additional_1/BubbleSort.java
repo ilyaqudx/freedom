@@ -9,8 +9,8 @@ public class BubbleSort {
 		{
 			for (int j = i + 1; j < size; j++)
 			{
-				int p1 = arr[i].count();
-				int p2 = arr[j].count();
+				int p1 = arr[i].getAllSalary();
+				int p2 = arr[j].getAllSalary();
 				if(p1 < p2)
 				{
 					//交换

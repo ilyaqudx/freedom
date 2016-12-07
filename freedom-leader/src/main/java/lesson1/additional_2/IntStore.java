@@ -18,7 +18,7 @@ public class IntStore {
 	public void putMyItem(int index,MyItem item) throws Exception
 	{
 		if(index < 0 || index > maxSize - 1)
-			throw new IllegalArgumentException("index must in 0 - 999");
+			throw new IllegalArgumentException("index must be in 0 - 999");
 		if(null == item)
 			throw new IllegalArgumentException("item can not is null");
 		storeByteArray[index] = ByteArrayHelper.writeInt(new byte[]{item.getType(),item.getColor(),item.getPrice(),0});

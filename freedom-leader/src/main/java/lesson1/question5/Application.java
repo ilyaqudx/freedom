@@ -2,7 +2,7 @@ package lesson1.question5;
 
 import java.util.Random;
 
-public class Main {
+public class Application {
 
 	public static final void main(String[] args) throws Exception
 	{
@@ -50,7 +50,7 @@ public class Main {
 		
 		store.sort();
 		
-		for (int i = 0; i < size; i++) 
+		for (int i = 0; i < 100; i++) 
 		{
 			System.err.println(store.getMyItem(i));
 		}

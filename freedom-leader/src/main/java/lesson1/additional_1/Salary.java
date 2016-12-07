@@ -30,17 +30,17 @@ public class Salary implements Comparable<Salary>{
 	}
 	@Override
 	public String toString() {
-		return "Salary [name=" + name + ",count = " +count()+ ", baseSalary=" + baseSalary + ", bouns=" + bouns + "]";
+		return "Salary [name=" + name + ",count = " +getAllSalary()+ ", baseSalary=" + baseSalary + ", bouns=" + bouns + "]";
 	}
-	public int count()
+	public int getAllSalary()
 	{
 		return baseSalary * 13 + bouns;
 	}
 	@Override
 	public int compareTo(Salary o)
 	{
-		int c1 = count();
-		int c2 = o.count();
+		int c1 = getAllSalary();
+		int c2 = o.getAllSalary();
 		return c1 == c2 ? 0 : c1 > c2 ? -1 : 1;
 	}
 }

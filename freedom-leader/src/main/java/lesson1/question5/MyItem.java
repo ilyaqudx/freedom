@@ -37,7 +37,7 @@ public class MyItem {
 		result = prime * result + type;
 		return result;
 	}
-	@Override
+	/*@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
@@ -53,7 +53,7 @@ public class MyItem {
 		if (type != other.type)
 			return false;
 		return true;
-	}
+	}*/
 	@Override
 	public String toString() {
 		return "MyItem [type=" + type + ", color=" + color + ", price=" + price + "]";

@@ -1,5 +1,7 @@
 package lesson1.question5;
 
+import java.util.Arrays;
+
 public class ByteStore {
 
 	//当前存放MyItem数量
@@ -7,7 +9,7 @@ public class ByteStore {
 	//最大长度
 	private int maxSize = 1000;
 	//实际存放MyItem的字节数组
-	private byte[] storeByteArray = new byte[1000 * 3];
+	private byte[] storeByteArray = new byte[maxSize * 3];
 	
 	/**
 	 * @param index item start pos  ,range 0 - 999
@@ -20,7 +22,7 @@ public class ByteStore {
 		if(null == item)
 			throw new IllegalArgumentException("item can not is null");
 		int start = index * 3;
-		storeByteArray[start] = item.getType();
+		storeByteArray[start]   = item.getType();
 		storeByteArray[start+1] = item.getColor();
 		storeByteArray[start+2] = item.getPrice();
 		++size;
@@ -29,7 +31,7 @@ public class ByteStore {
 	public MyItem getMyItem(int index)
 	{
 		if(index < 0 || index > maxSize - 1)
-			throw new IllegalArgumentException("index must in 0 - 999");
+			throw new IllegalArgumentException("index must be in 0 - 999");
 		int start = index * 3;
 		return new MyItem(storeByteArray[start], storeByteArray[start+1], storeByteArray[start+2]);
 	}
@@ -41,26 +43,51 @@ public class ByteStore {
 	
 	public void sort()
 	{
-		for (int i = 0; i < size - 1; i++) 
+		sort0(0, size - 1);
+	}
+	
+	private void sort0(int low,int high)
+	{
+		if(low < high)
 		{
-			for (int j = i + 1; j < size; j++)
+			int pviot = partion(low,high);
+			sort0(low, pviot - 1);
+			sort0(pviot + 1, high);
+		}
+	}
+	
+	private int partion(int low,int high)
+	{
+		byte[] base = copy(low);
+		while(low < high)
+		{
+			while(storeByteArray[high * 3 + 2] <= base[2] && low < high)
+				high--;
+			if(low < high)
 			{
-				int p1 = storeByteArray[i * 3 + 2];
-				int p2 = storeByteArray[j * 3 + 2];
-				if(p1 > p2)
-				{
-					//交换
-					byte tempType  = storeByteArray[i * 3 + 0];
-					byte tempColor = storeByteArray[i * 3 + 1];
-					byte tempPrice = storeByteArray[i * 3 + 2];
-					storeByteArray[i * 3 + 0] = storeByteArray[j * 3 + 0];
-					storeByteArray[i * 3 + 1] = storeByteArray[j * 3 + 1];
-					storeByteArray[i * 3 + 2] = storeByteArray[j * 3 + 2];
-					storeByteArray[j * 3 + 0] = tempType;
-					storeByteArray[j * 3 + 1] = tempColor;
-					storeByteArray[j * 3 + 2] = tempPrice;
-				}
+				swap(high, low);
+				low ++;
+			}
+			while(storeByteArray[low * 3 + 2] >= base[2] && low < high)
+				low++;
+			if(low < high)
+			{
+				swap(low, high);
+				high --;
 			}
 		}
+		System.arraycopy(base, 0, storeByteArray, low * 3, 3);
+		return low;
+	}
+	
+	private byte[] copy(int index)
+	{
+		return Arrays.copyOfRange(storeByteArray, index * 3, index * 3 + 3);
+	}
+	
+	private void swap(int fromIndex,int toIndex)
+	{
+		byte[] temp = copy(fromIndex);
+		System.arraycopy(temp, 0, storeByteArray, toIndex * 3, 3);
 	}
 }

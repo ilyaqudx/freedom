@@ -1,0 +1,115 @@
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>数组行优先和列优先缓存命中演示</title>
+</head>
+<body>
+	<div><font color="red">前提说明,以下为简单分析缓存命中.假定高速缓存只有L1的情况,Cache Line 大小为64byte.不考虑L2,L3.即数据读取流程为   CPU -> L1 -> Memory,
+	真实情况肯定要复杂得多</font> </div>
+	<div>下面为M(miss)表示缓存未命中,H(hit)表示命中缓存</div>
+	<div id="rowFirst">
+		<h2><font color="green">行优先</font></h2>
+		<table border="1" cellpadding="5" cellspacing="5">
+			<tr>
+				<th>a[i][j]</th>
+				<th>j = 0</th>
+				<th>j = 1</th>
+				<th>j = 2</th>
+				<th>j = ..</th>
+				<th>j = 63</th>
+				<th>j = 64</th>
+				<th>j = ..</th>
+				<th>j = 10239</th>
+				<th>说明</th>
+			</tr>
+			<tr>
+				<th>i = 0</th>
+				<th>1  -> M</th>
+				<th>2  -> H</th>
+				<th>3  -> H</th>
+				<th>.. -> H</th>
+				<th>64 -> H</th>
+				<th>65 -> M</th>
+				<th>.. -> H</th>
+				<th>10240 -> H</th>
+				<th width="300">
+					行优先.数据从左至右顺序访问,数据是连续的.步长为1.cache line 大小为64字节,所以数据中每64字节为一组，每一组中第一个元素缓存不命中,需要从内存中加载,后续63个字节也一同加载到高速缓存中,所以后续63字节全部命中.如此循环.
+					每一行10240个字节 ，即每一行有 10240 /64 = 160次未命中,有10240行,所以总共有 160 * 10240 = 1638400次未命中缓存需要去内存中读取数据
+				</th>
+			</tr>
+			<tr>
+				<th>i = 1</th>
+				<th>10241  -> M</th>
+				<th>10242  -> H</th>
+				<th>10243  -> H</th>
+				<th>.. -> H</th>
+				<th>10306 -> H</th>
+				<th>10307 -> M</th>
+				<th>.. -> H</th>
+				<th>20480 -> H</th>
+			</tr>
+		</table>
+	</div>
+	
+	
+	<div id="colFirst">
+		<h2><font color="red">列优先</font></h2>
+		<table border="1" cellpadding="5" cellspacing="5">
+			<tr>
+				<th>a[i][j]</th>
+				<th>j = 0</th>
+				<th>j = 1</th>
+				<th>j = 2</th>
+				<th>j = ..</th>
+				<th>j = 63</th>
+				<th>j = 64</th>
+				<th>j = ..</th>
+				<th>j = 10239</th>
+				<th>说明</th>
+			</tr>
+			<tr>
+				<th>i = 0</th>
+				<th>1  -> M</th>
+				<th>2 -> M</th>
+				<th>3 -> M</th>
+				<th>4 -> M</th>
+				<th>5 -> M</th>
+				<th>..... -> M</th>
+				<th>..... -> M</th>
+				<th>10240 -> M</th>
+				<th width="300">
+					列优先访问数组,是一列一列进行访问,先访问第一列的元素,再访问第二列的元素.下一个元素和上一个元素的步长为行的长度,在我们这儿为10240,而Cache line长度为64字节,
+					步长远远大于了cache line的长度,导致了每访问一个元素都不能命中缓存,只能去内存中取数据，所以整个未命中次数即为
+					10240 * 10240 = 104857600
+				</th>
+			</tr>
+			<tr>
+				<th>i = 1</th>
+				<th>10241 -> M</th>
+				<th>10242 -> M</th>
+				<th>10243 -> M</th>
+				<th>10244 -> M</th>
+				<th>10245 -> M</th>
+				<th>..... -> M</th>
+				<th>..... -> M</th>
+				<th>20480 -> M</th>
+				<th width="300">
+				</th>
+			</tr>
+			<tr>
+				<th>i = 10240</th>
+				<th>i * 10239 + 1 -> M</th>
+				<th>i * 10239 + 2 -> M</th>
+				<th>i * 10239 + 3 -> M</th>
+				<th>..... -> M</th>
+				<th>..... -> M</th>
+				<th>..... -> M</th>
+				<th>..... -> M</th>
+				<th>i * 10240 -> M</th>
+				<th width="300">
+				</th>
+			</tr>
+		</table>
+	</div>
+</body>
+</html>

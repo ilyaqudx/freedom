@@ -6,12 +6,12 @@ public class RandomUtils {
 
 	public static final String chars = "abcdefghijklmnopqrstuvwxyz";
 	
+	public static final Random r = new Random();
 	/**
 	 * 产生n位字符串
 	 * */
 	public static final String randomString(int len)
 	{
-		Random r = new Random();
 		int charLen = chars.length();
 		char[] cs = new char[len];
 		for (int i = 0; i < len; i++) {
@@ -22,6 +22,6 @@ public class RandomUtils {
 	
 	public static final int nextInt(int bound)
 	{
-		return new Random().nextInt(bound);
+		return r.nextInt(bound);
 	}
 }

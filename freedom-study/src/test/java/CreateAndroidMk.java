@@ -3,7 +3,8 @@ import java.io.File;
 public class CreateAndroidMk {
 
 	public static void main(String[] args) {
-		m(new File("D:\\client\\Classes"));
+		//m(new File("D:\\client\\Classes"));
+		System.out.println(Integer.toBinaryString(20479));
 	}
 	
 	public static final void m(File f)

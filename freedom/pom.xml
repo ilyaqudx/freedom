@@ -100,5 +100,6 @@
 		<module>freedom-pay</module>
 		<module>freedom-bio</module>
 		<module>freedom-secrity</module>
+		<module>freedom-jdfs</module>
 	</modules>
 </project>

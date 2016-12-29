@@ -97,6 +97,7 @@ public class NioProcessor {
 					{
 						data = mergeBuffer(session.pollFragment(),newBuffer);
 					}
+					data.flip();//设置为读模式
 					int start = data.position();
 					while(data.hasRemaining() && Codec.decode(session, data))
 					{
@@ -125,6 +126,7 @@ public class NioProcessor {
 
 		private ByteBuffer mergeBuffer(ByteBuffer fragment, ByteBuffer newBuffer)
 		{
+			newBuffer.flip();
 			int capacity = fragment.limit() + newBuffer.limit();
 			ByteBuffer mergeBuffer = ByteBuffer.allocate(capacity);
 			mergeBuffer.put(fragment);

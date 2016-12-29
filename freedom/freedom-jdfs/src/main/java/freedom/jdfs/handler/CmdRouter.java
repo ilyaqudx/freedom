@@ -11,5 +11,9 @@ public class CmdRouter {
 		{
 			
 		}
+		else if(packet.cmd == ProtoCommon.TRACKER_PROTO_CMD_SERVICE_QUERY_STORE_WITHOUT_GROUP_ONE)
+		{
+			new QueryStorageAddressCommand().execute(packet);
+		}
 	}
 }

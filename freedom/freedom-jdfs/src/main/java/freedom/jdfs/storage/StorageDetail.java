@@ -43,7 +43,7 @@ typedef struct StructFDFSStorageDetail
 #endif
 } FDFSStorageDetail;
   */
-public class Storage {
+public class StorageDetail {
 
 	byte status;
 	byte padding;  //just for padding
@@ -52,7 +52,7 @@ public class Storage {
 	String version;//[FDFS_VERSION_SIZE];
 	String domain_name;//[FDFS_DOMAIN_NAME_MAX_SIZE];
 
-	Storage psync_src_server;
+	StorageDetail psync_src_server;
 	long path_total_mbs; //total disk storage in MB
 	long path_free_mbs;  //free disk storage in MB
 

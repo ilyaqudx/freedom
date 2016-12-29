@@ -1,7 +1,7 @@
 package freedom.jdfs.nio;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -18,6 +18,7 @@ public class NioSession {
 	protected static final AtomicLong unionIdCreater = new AtomicLong(0);
 	private Map<String,Object> attrs = new HashMap<String,Object>();
 	static final String FRAGMENT = "fragment";
+	private SelectionKey key;
 	public NioSession(SocketChannel channel)
 	{
 		this.channel = channel;
@@ -39,9 +40,9 @@ public class NioSession {
 		{
 			try
 			{
-				channel.register(sel, SelectionKey.OP_READ);
+				key = channel.register(sel, SelectionKey.OP_READ,this);
 			}
-			catch (ClosedChannelException e) 
+			catch (IOException e) 
 			{
 				e.printStackTrace();
 			}
@@ -57,7 +58,11 @@ public class NioSession {
 	{
 		if(fragment.hasRemaining())
 		{
-			attrs.put(FRAGMENT, ByteBuffer.wrap(fragment.array(), fragment.position(), fragment.remaining()));
+			ByteBuffer buffer = ByteBuffer.allocate(fragment.remaining());
+			byte[] remaining  = new byte[fragment.remaining()];
+			System.arraycopy(fragment.array(), fragment.position(), remaining, 0, fragment.remaining());
+			buffer.put(remaining);
+			attrs.put(FRAGMENT, ByteBuffer.wrap(remaining));
 		}
 	}
 	

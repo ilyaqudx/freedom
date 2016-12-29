@@ -5,10 +5,17 @@ import freedom.jdfs.protocol.RecvPackageInfo;
 public abstract class AbstractCommand implements Command {
 
 	@Override
-	public void execute0(RecvPackageInfo packet) throws Exception
+	public void execute(RecvPackageInfo packet)
 	{
-		execute(packet.body);
+		try 
+		{
+			doExecute(packet.body);
+		} 
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
-	public abstract void execute(byte[] data)throws Exception;
+	public abstract void doExecute(byte[] data)throws Exception;
 }

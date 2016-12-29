@@ -1,4 +1,4 @@
-package lesson2.question2.test2;
+package lesson2.question4;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,13 +8,15 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import lesson1.additional_2.ByteArrayHelper;
 import lesson1.question4.RandomUtils;
-import lesson2.question2.Group;
-import lesson2.question2.Salary;
-import lesson2.question2.SalaryStore;
 
 import com.google.common.io.Files;
 
@@ -24,14 +26,8 @@ public class Application {
 	{
 		String file = "d:/salary.txt";
 		int count = 10000000;
-		long cs = System.nanoTime();
-		//writeByMappedByteBuffer(count,file);
-		long ce = System.nanoTime();
-		System.out.println("生成并写入文件 cost :" + (ce - cs) + " ns");
-		long s = System.nanoTime();
+		write(count,file);
 		read(file, count);
-		long e = System.nanoTime();
-		System.out.println("总共耗时  : " + (e -s) + "ns");
 		//groupByStream(count);
 		//add(count);
 		//read2(file, count);
@@ -153,12 +149,12 @@ public class Application {
 	private static final void read(String file,int count) throws IOException
 	{
 		long rs = System.nanoTime();
-		RandomAccessFile f = new RandomAccessFile(file, "r");
+		/*RandomAccessFile f = new RandomAccessFile(file, "r");
 		FileChannel channel = f.getChannel();
 		MappedByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, f.length());
-		//byte[] bytes = new byte[buffer.limit()];//
-		//buffer.get(bytes);
-		//byte[] bytes = java.nio.file.Files.readAllBytes(Paths.get(file));
+		byte[] bytes = new byte[buffer.limit()];//
+		buffer.get(bytes);*/
+		byte[] bytes = java.nio.file.Files.readAllBytes(Paths.get(file));
 		long re = System.nanoTime();
 		System.out.println("read " + count + " line data cost :" + (re - rs));
 		
@@ -171,11 +167,13 @@ public class Application {
 		while(i < count)
 		{
 			offset = i * 13;
-			byte x = (byte) (buffer.get() - 97);
-			byte y = (byte) (buffer.get() - 97);
-			buffer.position(offset + 5);
-			int salary = buffer.getInt();//时间从430MS -》 130左右.原因就在于这两个转换.之前先要复制字节数组,然后再转成INT.但是如果不需要转的话,直接操作数组会比BYTEBUFFER性能好
-			int bonus  = buffer.getInt();
+			byte x = (byte) (bytes[offset++] - 97);
+			byte y = (byte) (bytes[offset++] - 97);
+			offset += 3;
+			int salary = ByteArrayHelper.writeInt(Arrays.copyOfRange(bytes, offset, offset + 4));
+			offset += 4;
+			int bonus  = ByteArrayHelper.writeInt(Arrays.copyOfRange(bytes, offset, offset + 4));
+			offset += 4;
 			counter [x][y] ++;
 			amounter[x][y] +=  salary * 13 + bonus;
 			i++;
@@ -243,22 +241,27 @@ public class Application {
 		System.out.println("write  " + count + " line data to file cost : " + (e - s) + " ns");
 	}
 	
-	private static final void writeByMappedByteBuffer(int count,String fileName) throws IOException
+	private static final void groupByStream(int count)
 	{
-        RandomAccessFile file = new RandomAccessFile(fileName, "rw");
-        long fileSize = count * 13;
-        file.seek(fileSize);
-        FileChannel fch = file.getChannel();
-        MappedByteBuffer buffer  = fch.map(FileChannel.MapMode.READ_WRITE, 0, fileSize);
-        for (int i = 0; i < count; i++) {
-            int salary = RandomUtils.nextInt(999996) + 5;
-            int bonus  = RandomUtils.nextInt(100001);
-          
-            buffer.put(RandomUtils.randomString(5).getBytes());
-            buffer.putInt(salary);
-            buffer.putInt(bonus);
-        }
-        file.close();
-        fch.close();
-    }
+		long cs = System.nanoTime();
+		List<Salary> store = new ArrayList<>(count);
+		for (int i = 0; i < count; i++) 
+		{
+			store.add(new Salary(RandomUtils.randomString(2),RandomUtils.nextInt(999996) + 5,
+					RandomUtils.nextInt(100001)));
+		}
+		long ce = System.nanoTime();
+		System.out.println("create " + count +" line data cost : " + (ce - cs) + " ns");
+		
+		//Map<String,Long> counting  = store.stream().collect(Collectors.groupingBy(Salary::getName,Collectors.counting()));
+		long gs = System.nanoTime();
+		Map<String,Long> amounting = store.stream().collect(Collectors.groupingBy(Salary::getName,Collectors.summingLong(Salary::count)));
+		long ge = System.nanoTime();
+		System.out.println("use java 8 group " + count + " line data cost" + (ge - gs) + " ns");
+		System.out.println("group size : " + amounting.size());
+		long ccs = System.nanoTime();
+		amounting.values().stream().sorted();
+		long cce = System.nanoTime();
+		System.out.println("sort cost : " + (cce -ccs) + " ns");
+	}
 }

@@ -1,4 +1,4 @@
-package lesson2.question2.test2;
+package lesson2.question4;
 
 public class Group implements Comparable<Group>{
 

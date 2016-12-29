@@ -1,4 +1,4 @@
-package lesson2.question2.test;
+package lesson2.question4;
 
 public class SalaryStore {
 
@@ -9,7 +9,7 @@ public class SalaryStore {
 	public SalaryStore(int max)
 	{
 		this.max = max > 0 ? max : Integer.MAX_VALUE;
-		this.bytes = new byte[max * 7];
+		this.bytes = new byte[max * 13];
 	}
 
 	public boolean add(Salary salary)
@@ -17,7 +17,7 @@ public class SalaryStore {
 		if(null == salary || max == size)
 			return false;
 		byte[] data = salary.getBytes();
-		System.arraycopy(data, 0, bytes, size * 7, 7);
+		System.arraycopy(data, 0, bytes, size * 13, 13);
 		size ++;
 		return true;
 	}

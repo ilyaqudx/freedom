@@ -1,4 +1,4 @@
-package lesson2.question2.test;
+package lesson2.question4;
 
 import lesson1.additional_2.ByteArrayHelper;
 
@@ -37,10 +37,10 @@ public class Salary {
 	}
 	public byte[] getBytes()
 	{
-		byte[] buffer = new byte[7];
+		byte[] buffer = new byte[13];
 		System.arraycopy(name.getBytes(), 0, buffer, 0, 5);
-		buffer[5] = (byte) salary;
-		buffer[6] = (byte) bonus;
+		System.arraycopy(ByteArrayHelper.getBytes(salary), 0, buffer, 5, 4);
+		System.arraycopy(ByteArrayHelper.getBytes(bonus), 0, buffer, 9, 4);
 		return buffer;
 	}
 }

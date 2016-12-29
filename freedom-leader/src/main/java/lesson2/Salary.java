@@ -68,10 +68,10 @@ public class Salary {
     private static void group(String fileName) throws UnsupportedEncodingException {
         
         try {
+        	long gs = System.nanoTime();
             RandomAccessFile file = new RandomAccessFile(fileName, "r");
             FileChannel fch = file.getChannel();
             MappedByteBuffer buffer = fch.map(FileChannel.MapMode.READ_ONLY,0, file.length());
-            long gs = System.nanoTime();
             while (buffer.position() < buffer.limit()) {
                 buffer.get(prefix);
                 byte salary = buffer.get();

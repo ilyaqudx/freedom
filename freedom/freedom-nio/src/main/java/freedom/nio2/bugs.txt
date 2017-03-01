@@ -1,0 +1,50 @@
+bug-1 客户端发送消息到服务端,服务器接收到消息后,返回消息给客户端,这时服务器注册了写事件,当消息发送后.selector.select每次都会返回有WRITE事件,造成死循环
+
+	原因:当监听了写事件后,底层判断可写时就会触发可写的事件,而可写的规则是当写缓冲区有空间即为可写,所以一直返回可写,造成了死循环
+	
+	解决:
+		1-不注册写事件,只注册读事件(强烈建议)
+		2-可以注册写事件,但写完后一定要将Key取消掉.
+bug-2 当注册监听事件时,如果默认没有传入attchment,则默认设置为空,如果之前有设置过attchment,则会清空掉.这个要注意一下.
+
+bug-3 写数据目前也是在NIOPROCESSOR线程中处理的,那么当不注册写监听事件时,如果及时的将数据写出去呢?很简单,调用Selector.wakeup方法唤醒线程即可.
+
+bug-4 在自己写NIO框架时,如果用到了线程池来处理线程,在捕获异常时,一定要在最后捕获一个Exception异常,因为很多时间抛的异常是throwable,
+		如果只捕获IOEXCEPTION则不会打印任何的异常信息.
+		
+bug-5 一定要注意,要用reactor线程接收缓存区的消息进行编码处理,处理一个完整的包后,再用工作线程异步处理.否则可能会引起数据的错乱.无法保证
+		消息的顺序.
+		
+bug-6 当接收了客户端的连接后,需要设置SocketChannel为configurationBlocking为false.为非阻塞模式.否则会报错.
+
+bug-7 在Connector的ConnectorReactor中,将SESSION注册到PROCESSOR里面,代码如下:此方法调用后,则会将SESSION放入PROCESSOR的新增队列,
+			public void regiestSession(NioSession session)
+			{
+				//bug-1
+				newSessionQueue.add(session);
+				NioProcessor v = reference.get();
+				if(v == null){
+					if(reference.compareAndSet(null,this))
+						this.startup();
+				}
+				sel.wakeup();
+			}
+			
+			然后在NIOPROCESSOR里面循环处理新增的SESSION.一个是在CONNECTOR_REACTOR线程里,一个是处理IO读写的线程.所以出现了并发的问题
+			int n = sel.select(500L);
+				
+				if(n > 0){
+					process();
+				}
+				
+				handleNewSession();
+				
+				flush0();
+				
+				
+			在handleNewSession方法被调用时,新注册的SESSION注册到NIOPROCESSOR的SELECTOR的读事件,这时将SELECTOR赋值给SESSION.
+			而FLUSH0方法是处理SESSION的写数据的方法.里面用到了PROCESSOR的SELECTOR.因为2个线程的原因.在上一次handleNewSession结束后,
+			新增加的SESSION已经有数据要写,但这时处理新连接的方法刚刚调用完,只有等下一次调用才会设置SELECTOR到SESSION里面,所以会报NullPointerException.
+			
+			
+bug-8	如果也由IO线程负责了简单业务的处理操作后返回,由IO线程返回FUTURE，如果这时调用FUTURE。await方法,那么IO线程被阻塞 。测试MINA是否会阻塞 .

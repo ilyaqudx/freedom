@@ -7,13 +7,13 @@ import java.nio.channels.SocketChannel;
 
 public class AcceptorReactor extends NioReactor {
 
-	public AcceptorReactor()
+	public AcceptorReactor(AbstractNioService service)
 	{
-		super("acceptor-reactor");
+		super("acceptor-reactor",service);
 	}
 
 	@Override
-	public void open() throws IOException 
+	public void openSocket() throws IOException 
 	{
 		ServerSocketChannel serverSocket = ServerSocketChannel.open();
 		serverSocket.configureBlocking(false);
@@ -23,27 +23,16 @@ public class AcceptorReactor extends NioReactor {
 	}
 
 	@Override
-	protected void interest(SelectionKey key) 
+	protected void interest(SelectionKey key) throws IOException 
 	{
-		if(key.isAcceptable())
-		{
-			try
-			{
-				ServerSocketChannel serverSocket  = (ServerSocketChannel)key.channel();
-				SocketChannel       socketChannel = serverSocket.accept();
-				NioSession 			session       = buildNewSession(socketChannel);
-				socketChannel.configureBlocking(false);
-				service.getHandler().onCreated(session);
-				NioProcessor processor = service.getProcessorPool().getProcessor(session);
-				processor.regiestSession(session);
-				session.setProcessor(processor);
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-		}
-		
+		ServerSocketChannel serverSocket  = (ServerSocketChannel)key.channel();
+		SocketChannel       socketChannel = serverSocket.accept();
+		NioSession 			session       = service.buildNewSession(socketChannel);
+		socketChannel.configureBlocking(false);
+		service.getHandler().onCreated(session);
+		NioProcessor processor = service.getProcessorPool().getProcessor(session);
+		processor.regiestSession(session);
+		session.setProcessor(processor);
 	}
 
 }

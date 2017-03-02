@@ -1,6 +1,7 @@
 package freedom.nio2;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 
 public abstract class AbstractNioService implements NioService {
 
@@ -15,7 +16,7 @@ public abstract class AbstractNioService implements NioService {
 	protected volatile long activationTime;
 	
 	public AbstractNioService(InetSocketAddress bindAddress,NioHandler handler, ProtocolCodec codec,NioChannelConfig channelConfig,
-			NioProcessorPool processorPool,NioReactor reactor,ServiceListener listener)
+			int processorCount,Class<? extends NioReactor> reactorCls,ServiceListener listener)
 	{
 		if(null == bindAddress)		throw new IllegalArgumentException("bindAddress is null");
 		if(null == handler)			throw new NullPointerException("handler is null");
@@ -24,10 +25,9 @@ public abstract class AbstractNioService implements NioService {
 		this.handler = handler;
 		this.codec = codec;
 		this.channelConfig = channelConfig == null ? new NioChannelConfig() : channelConfig;
-		this.processorPool = processorPool;
-		this.reactor       = reactor;
+		this.processorPool = new NioProcessorPool(processorCount,this);
+		this.reactor       = Utils.invokeCtor(reactorCls, AbstractNioService.class, this);
 		this.listener      = listener;
-		this.reactor.setService(this);
 		this.listener.addService(this);
 	}
 
@@ -75,11 +75,15 @@ public abstract class AbstractNioService implements NioService {
 	{
 		return this.processorPool;
 	}
+	protected NioSession buildNewSession(SocketChannel channel)
+	{
+		return new NioSession(this, channel);
+	}
 	public void start()
 	{
-		synchronized (this) {
-			if(isActive())
-				return;
+		synchronized (this) 
+		{
+			if(isActive())return;
 			active = true;
 		}
 		activationTime = System.currentTimeMillis();

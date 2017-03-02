@@ -6,13 +6,13 @@ import java.nio.channels.SocketChannel;
 
 public class ConnectorReactor extends NioReactor {
 
-	public ConnectorReactor()
+	public ConnectorReactor(AbstractNioService service)
 	{
-		super("connector-reactor");
+		super("connector-reactor",service);
 	}
 
 	@Override
-	public void open() throws IOException 
+	public void openSocket() throws IOException 
 	{
 		SocketChannel socket = SocketChannel.open();
 		socket.configureBlocking(false);
@@ -21,37 +21,17 @@ public class ConnectorReactor extends NioReactor {
 	}
 
 	@Override
-	protected void interest(SelectionKey key)
+	protected void interest(SelectionKey key) throws IOException
 	{
-		if(key.isConnectable())
-		{
-			SocketChannel socket = (SocketChannel) key.channel();
-			try {
-				boolean connected = socket.finishConnect();
-				if(!connected)
-					throw new IOException("socket connect fail!");
-				NioSession session = buildNewSession(socket);
-				NioProcessor processor = service.getProcessorPool().getProcessor(session);
-				processor.regiestSession(session);
-				session.setProcessor(processor);
-				service.getHandler().onCreated(session);
-			} 
-			catch (Exception e)
-			{
-				e.printStackTrace();
-				try {
-					socket.close();
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-			}
-		}
-		else if(key.isReadable())
-		{
-			
-		}
-
+		SocketChannel socket = (SocketChannel) key.channel();
+		boolean connected = socket.finishConnect();
+		if(!connected)throw new IOException("socket connect fail!");
+		
+		NioSession session 	   = service.buildNewSession(socket);
+		NioProcessor processor = service.getProcessorPool().getProcessor(session);
+		processor.regiestSession(session);
+		session.setProcessor(processor);
+		service.getHandler().onCreated(session);
+		super.exitThread();
 	}
-
 }

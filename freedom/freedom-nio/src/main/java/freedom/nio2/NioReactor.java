@@ -3,17 +3,19 @@ package freedom.nio2;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class NioReactor implements Runnable{
 
-	private String  name;
+	protected String  name;
 	protected Selector sel;
 	protected AbstractNioService service;
+	protected volatile boolean running = true;
+	protected AtomicReference<NioReactor> reference = new AtomicReference<>();
 	protected ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
 		
 		@Override
@@ -22,39 +24,43 @@ public abstract class NioReactor implements Runnable{
 			return new Thread(r,name);
 		}
 	});
-	public NioReactor(String name)
-	{
-		this.name    = name;
-	}
+	
 	public NioReactor(String name,AbstractNioService service)
 	{
 		this.name    = name;
 		this.service = service;
-	}
-	public void setService(AbstractNioService service)
-	{
-		this.service = service;
+		this.sel     = SelectorFactory.open();
 	}
 	
 	public void start()
 	{
-		if(service == null)
-			throw new NullPointerException("service is null");
-		executor.submit(this);
+		try 
+		{
+			NioReactor reactor = reference.get();
+			synchronized (service) 
+			{
+				if(reactor == null){
+					if(reference.compareAndSet(null, this)){
+						this.openSocket();
+						executor.submit(this);
+					}
+				}
+			}
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
 	}
-	
-	
-	public abstract void open() throws IOException;
-	
 	public void eventLoop()
 	{
-		while(service.isActive())
+		while(service.isActive() && running)
 		{
 			try
 			{
-				sel.select(500L);
+				sel.select(100L);
 				Set<SelectionKey> keyset = sel.selectedKeys();
-				keyset.forEach(this::interest);
+				keyset.forEach(this::interest0);
 				keyset.clear();
 			} 
 			catch (IOException e) 
@@ -64,26 +70,38 @@ public abstract class NioReactor implements Runnable{
 		}
 	}
 	
-	protected abstract void interest(SelectionKey key);
 	
-	protected NioSession buildNewSession(SocketChannel channel)
-	{
-		return new NioSession(service, channel);
-	}
-
 	@Override
 	public void run() 
 	{
+		this.eventLoop();
+	}
+	
+	
+	public abstract void openSocket() throws IOException;
+	
+	protected abstract void interest(SelectionKey key) throws IOException;
+	
+	protected void interest0(SelectionKey key)
+	{
 		try 
 		{
-			this.sel =  Selector.open();
-			this.open();
-			this.service.getProcessorPool().initPool(this.service);
-			this.eventLoop();
+			if(this instanceof AcceptorReactor)
+				if(key.isAcceptable())
+					interest(key);
+			else if(this instanceof ConnectorReactor)
+				if(key.isConnectable())
+					interest(key);
 		} 
-		catch (IOException e) 
+		catch (IOException e)
 		{
 			e.printStackTrace();
 		}
+	}
+
+	protected void exitThread()
+	{
+		if(this.reference.compareAndSet(this, null))
+			this.running = false;
 	}
 }

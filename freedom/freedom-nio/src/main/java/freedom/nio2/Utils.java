@@ -1,5 +1,6 @@
 package freedom.nio2;
 
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -25,5 +26,24 @@ public class Utils {
 			e.printStackTrace();
 		}
 		return "127.0.0.1";
+	}
+	
+	/**反射调用构造方法	
+	 * @param cls
+	 * @param parameterType
+	 * @param parameter
+	 * @return
+	 */
+	public static final <T,P> T invokeCtor(Class<T> cls,Class<P> parameterType,P parameter)
+	{
+		try
+		{
+			return cls.getConstructor(parameterType).newInstance(parameter);
+		} 
+		catch (Exception e) 
+		{
+			e.printStackTrace();
+			throw new RuntimeException(e.getMessage());
+		}
 	}
 }

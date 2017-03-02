@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -20,6 +21,7 @@ public class NioProcessor implements Runnable{
 	private static final AtomicInteger processorId = new AtomicInteger(1);
 	private int        id;
 	private Selector   sel;
+	private Executor executor;
 	private AbstractNioService service;
 	private AtomicReference<NioProcessor> reference;
 	private Queue<NioSession> newSessionQueue ;
@@ -27,25 +29,21 @@ public class NioProcessor implements Runnable{
 	private long lastCheckIdleTime;
 	private List<NioSession> allSessions = new LinkedList<NioSession>();
 	
-	static final ExecutorService executor = Executors.newCachedThreadPool(new ThreadFactory() {
-		
-		@Override
-		public Thread newThread(Runnable r) {
-			// TODO Auto-generated method stub
-			return new Thread(r,"NioProcessor-" + processorId.incrementAndGet());
-		}
-	});
-	
-	public NioProcessor(AbstractNioService service)
+	public NioProcessor(Executor executor,AbstractNioService service)
 	{
 		this.id        = processorId.getAndIncrement();
-		this.sel       = SelectorFactory.open();
+		this.executor  = executor;
 		this.service   = service;
+		this.sel       = SelectorFactory.open();
 		this.reference = new AtomicReference<NioProcessor>();
 		this.newSessionQueue = new ConcurrentLinkedQueue<NioSession>();
 		this.flushSessionQueue = new ConcurrentLinkedQueue<NioSession>();
 	}
 	
+	public int getId() {
+		return id;
+	}
+
 	public void regiestSession(NioSession session)
 	{
 		allSessions.add(session);
@@ -65,14 +63,6 @@ public class NioProcessor implements Runnable{
 	
 	private void startup()
 	{
-		/*Executors.newSingleThreadExecutor(new ThreadFactory() {
-			
-			@Override
-			public Thread newThread(Runnable r) {
-				// TODO Auto-generated method stub
-				return new Thread(r,"NioProcessor-" + NioProcessor.this.id);
-			}
-		}).submit(this);*/
 		executor.execute(this);
 	}
 	

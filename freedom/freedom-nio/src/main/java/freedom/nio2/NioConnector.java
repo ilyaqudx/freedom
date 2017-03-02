@@ -11,7 +11,7 @@ public class NioConnector extends AbstractNioService {
 	
 	public NioConnector(InetSocketAddress bindAddress,NioHandler handler,ProtocolCodec codec,NioChannelConfig channelConfig)
 	{
-		super(bindAddress, handler, codec, channelConfig,new NioProcessorPool(1),new ConnectorReactor(),new ConnectorListener());
+		super(bindAddress, handler, codec, channelConfig,1,ConnectorReactor.class,new ConnectorListener());
 	}
 	
 	

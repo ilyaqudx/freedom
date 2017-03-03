@@ -40,6 +40,7 @@ public class NioSession {
 	public long					lastReadBytes;
 	public long					writenAllBytes;
 	public long					readAllBytes;
+	public long					writeAllPackets;
 	
 	public NioSession(AbstractNioService service,SocketChannel channel)
 	{
@@ -103,11 +104,13 @@ public class NioSession {
 					else if(!buffer.hasRemaining()){
 						this.lastWriteTime  = System.currentTimeMillis();
 						this.lastWriteBytes = writtenBytes;
-						this.writenAllBytes += writenAllBytes;
+						this.writenAllBytes += writtenBytes;
+						this.writeAllPackets ++;
 						this.currentWriteRequest.getFuture().setValue(writtenBytes);
 						this.service.getHandler().onWritten(this);
 						this.currentWriteRequest = null;
 						writeRequest.getFuture().getFutureListener().complete(writtenBytes);
+						System.out.println("发送成功【"+processor.getId()+"】【writtenBytes : " +writtenBytes+ "】【writenAllBytes : "+writenAllBytes+"】【writeAllPackets : " +writeAllPackets+"】");
 					}
 				} 
 				catch (Exception e) {
@@ -135,7 +138,8 @@ public class NioSession {
 		WriteRequest writeRequest = new WriteRequest(msg, writeFuture);
 		writeRequestQueue.add(writeRequest);
 		processor.addFlushSession(this);
-		sel.wakeup();
+		if(!processor.wakeup)
+			sel.wakeup();
 		return writeFuture;
 	}
 	

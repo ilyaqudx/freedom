@@ -10,15 +10,11 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class NioProcessor implements Runnable{
 
-	private static final AtomicInteger processorId = new AtomicInteger(1);
 	private int        id;
 	private Selector   sel;
 	private Executor executor;
@@ -27,11 +23,12 @@ public class NioProcessor implements Runnable{
 	private Queue<NioSession> newSessionQueue ;
 	private Queue<NioSession> flushSessionQueue;
 	private long lastCheckIdleTime;
+	public volatile boolean wakeup;
 	private List<NioSession> allSessions = new LinkedList<NioSession>();
 	
-	public NioProcessor(Executor executor,AbstractNioService service)
+	public NioProcessor(int id,Executor executor,AbstractNioService service)
 	{
-		this.id        = processorId.getAndIncrement();
+		this.id        = id;
 		this.executor  = executor;
 		this.service   = service;
 		this.sel       = SelectorFactory.open();
@@ -83,7 +80,7 @@ public class NioProcessor implements Runnable{
 				 * 
 				 */
 				int n = sel.select(500L);
-				
+				wakeup = true;
 				if(n > 0){
 					process();
 				}
@@ -93,6 +90,7 @@ public class NioProcessor implements Runnable{
 				notifyIdleSession();
 				
 				flush0();
+				wakeup = false;
 				
 			} 
 			catch (IOException e)

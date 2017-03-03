@@ -29,10 +29,11 @@ public class AcceptorReactor extends NioReactor {
 		SocketChannel       socketChannel = serverSocket.accept();
 		NioSession 			session       = service.buildNewSession(socketChannel);
 		socketChannel.configureBlocking(false);
-		service.getHandler().onCreated(session);
 		NioProcessor processor = service.getProcessorPool().getProcessor(session);
 		processor.regiestSession(session);
 		session.setProcessor(processor);
+		//在调用onCreated之前一定要将processor设置进行,否则SESSION当中的PROCESSOR为null
+		service.getHandler().onCreated(session);
 	}
 
 }

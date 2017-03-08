@@ -53,6 +53,13 @@ public class NioProcessor implements Runnable{
 		sel.wakeup();
 	}
 	
+	public void removeSession(NioSession session)
+	{
+		if(null != session){
+			allSessions.remove(session);
+		}
+	}
+	
 	public void addFlushSession(NioSession session) 
 	{
 		flushSessionQueue.add(session);
@@ -151,7 +158,7 @@ public class NioProcessor implements Runnable{
 	private void flush0() 
 	{
 		for (NioSession session = flushSessionQueue.poll();session != null;session = flushSessionQueue.poll()) {
-			while(!session.getSendPacketQueue().isEmpty()){
+			while(!session.getSendPacketQueue().isEmpty()){//关闭了SESSION,必须发送队列的消息,否则就在这儿死循环.必须释放资源
 				session.flush();
 			}
 		}

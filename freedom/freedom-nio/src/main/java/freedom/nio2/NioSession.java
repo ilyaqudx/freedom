@@ -41,6 +41,8 @@ public class NioSession {
 	public long					writenAllBytes;
 	public long					readAllBytes;
 	public long					writeAllPackets;
+	public long					writenAllTime;
+	public volatile boolean suspend;
 	
 	public NioSession(AbstractNioService service,SocketChannel channel)
 	{
@@ -85,6 +87,8 @@ public class NioSession {
 	
 	public void flush()
 	{
+		if(suspend)return;
+		
 		WriteRequest writeRequest = currentWriteRequest == null ? writeRequestQueue.poll() : currentWriteRequest;
 		
 		if(writeRequest == null)return;
@@ -93,24 +97,32 @@ public class NioSession {
 		//TODO encode不由IO线程处理
 		ByteBuffer buffer = service.getProtocolCodec().encode(this, writeRequest.getMsg());
 		int writtenBytes = 0;
+		long costTime = 0;
 		if(buffer != null && buffer.hasRemaining() && isConnected())
 		{
 			do {
 				try 
 				{
+					long start = System.currentTimeMillis();
 					writtenBytes += channel.write(buffer);
+					long end   = System.currentTimeMillis();
+					costTime += (end - start);
 					if(writtenBytes == 0)
 						break;
 					else if(!buffer.hasRemaining()){
 						this.lastWriteTime  = System.currentTimeMillis();
 						this.lastWriteBytes = writtenBytes;
 						this.writenAllBytes += writtenBytes;
+						this.writenAllTime  += costTime;
 						this.writeAllPackets ++;
 						this.currentWriteRequest.getFuture().setValue(writtenBytes);
 						this.service.getHandler().onWritten(this);
 						this.currentWriteRequest = null;
 						writeRequest.getFuture().getFutureListener().complete(writtenBytes);
-						System.out.println("发送成功【"+processor.getId()+"】【writtenBytes : " +writtenBytes+ "】【writenAllBytes : "+writenAllBytes+"】【writeAllPackets : " +writeAllPackets+"】");
+						System.out.println("发送成功【"+processor.getId()+"】【writtenBytes : " +writtenBytes+ "】【writenAllBytes : "+writenAllBytes+"】【writeAllPackets : " +writeAllPackets+"】【qps : " +(writenAllBytes * 1000 / writenAllTime)+ " bytes】");
+						if((writenAllBytes * 1000 / writenAllTime) > 1024*1024*2){
+							this.service.getHandler().onWriteSuspend(this, writenAllBytes * 1000 / writenAllTime);
+						}
 					}
 				} 
 				catch (Exception e) {
@@ -134,6 +146,10 @@ public class NioSession {
 	{
 		if(msg == null)
 			throw new NullPointerException("msg is null");
+		if(suspend){
+			System.err.println("session 流量过大.现不能发送消息");
+			throw new RuntimeException("session 流量过大.现不能发送消息");
+		}
 		WriteFuture writeFuture   = new WriteFuture(listener);
 		WriteRequest writeRequest = new WriteRequest(msg, writeFuture);
 		writeRequestQueue.add(writeRequest);
@@ -172,6 +188,16 @@ public class NioSession {
 
 	public void close() 
 	{
+		if(null != processor){
+			processor.regiestSession(this);
+		}
+		
+		//如果需要关闭SESSION,就要关闭SESSION所有的资源.这就是为什么需要DISPOSE的原因
+		if(null != writeRequestQueue)
+			writeRequestQueue.clear();
+		if(null != currentWriteRequest)
+			this.currentWriteRequest = null;
+		
 		if(channel != null){
 			try {
 				channel.close();

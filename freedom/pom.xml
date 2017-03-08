@@ -101,5 +101,6 @@
 		<module>freedom-bio</module>
 		<module>freedom-secrity</module>
 		<module>freedom-jdfs</module>
+		<module>freedom-cache</module>
 	</modules>
 </project>

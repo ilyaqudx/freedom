@@ -13,4 +13,6 @@ public interface NioHandler {
 	public void onException(NioSession session,Throwable throwable);
 
 	public void onClosed(NioSession abstractNioSession);
+	
+	public void onWriteSuspend(NioSession session,long qps);
 }

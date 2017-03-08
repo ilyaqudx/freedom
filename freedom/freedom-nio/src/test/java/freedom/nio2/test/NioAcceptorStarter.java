@@ -26,17 +26,20 @@ public class NioAcceptorStarter {
 			System.out.println(session + "连接成功!");
 			
 			new Thread(()->{
-				byte[] data = new byte[202400];
+				byte[] data = new byte[1024 * 1024];
 				//Arrays.fill(data,(byte) 97);
 				//String msg = new String(data);
 				while(true){
 					try {
-						Thread.sleep(2);
+						Thread.sleep(5);
+						session.write(data);
 					} catch (InterruptedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
+					}catch (Exception e2) {
+						e2.printStackTrace();
+						break;
 					}
-					session.write(data);
 				}
 			}).start();
 		}
@@ -69,6 +72,15 @@ public class NioAcceptorStarter {
 		public void onClosed(NioSession abstractNioSession) {
 			// TODO Auto-generated method stub
 			
+		}
+
+		@Override
+		public void onWriteSuspend(NioSession session, long qps)
+		{
+			session.suspend = true;
+			session.close();
+			System.out.println(session + "【qps : "+qps+" byte|" +(qps / 1024)+ "k|" +(qps / 1024 / 1024)+ "m】");
+		
 		}
 		
 	}

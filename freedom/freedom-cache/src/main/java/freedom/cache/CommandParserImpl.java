@@ -71,9 +71,9 @@ public class CommandParserImpl implements CommandParser {
 	}
 	public static final boolean is(byte[] cmd,byte[] target)
 	{
-		if(cmd.length != 3)
+		if(cmd.length != target.length)
 			return false;
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < target.length; i++) {
 			if(cmd[i] != target[i])
 				return false;
 		}

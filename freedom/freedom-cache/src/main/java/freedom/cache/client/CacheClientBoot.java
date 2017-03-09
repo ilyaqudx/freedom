@@ -2,20 +2,16 @@ package freedom.cache.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
-import freedom.cache.net.TextLineCodec;
-import freedom.nio2.NioConnector;
 
 public class CacheClientBoot {
 
 	
 	public static void main(String[] args) throws IOException 
 	{
-		NioConnector connector = new NioConnector(new InetSocketAddress(6666), new NioClientHandler(),new TextLineCodec());
+		BioConnector connector = new BioConnector("127.0.0.1", 6666, new BioHandler(), null);
 		//连接服务器
 		connector.start();
 		

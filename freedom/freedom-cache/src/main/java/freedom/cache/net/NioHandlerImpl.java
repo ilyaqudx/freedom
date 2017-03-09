@@ -17,6 +17,17 @@ public class NioHandlerImpl implements NioHandler {
 	public void onCreated(NioSession session) {
 		// TODO Auto-generated method stub
 		
+		/*new Thread(()->{
+			while(true){
+			try {
+				Thread.sleep(5);
+				session.write("i am server!!!\r\n");
+					
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}}
+		}).start();*/
 	}
 
 	@Override
@@ -29,12 +40,12 @@ public class NioHandlerImpl implements NioHandler {
 		}
 		catch (Exception e)
 		{
-			session.write("invalid command : " + new String((byte[])msg));
+			session.write("invalid command : " + new String((byte[])msg) + "\r\n");
 		}
 		
 		if(command != null){
 			String  response = cacheOperator.execute(command);
-			session.write(response == null ? "null" : response);
+			session.write(response == null ? "null\r\n" : response + "\r\n");
 		}
 	}
 

@@ -89,6 +89,8 @@ public class NioSession {
 	{
 		if(suspend)return;
 		
+		
+		
 		WriteRequest writeRequest = currentWriteRequest == null ? writeRequestQueue.poll() : currentWriteRequest;
 		
 		if(writeRequest == null)return;
@@ -125,9 +127,13 @@ public class NioSession {
 						}
 					}
 				} 
+				catch(IOException e){
+					this.close();
+				}
 				catch (Exception e) {
 					e.printStackTrace();
 					writeRequest.getFuture().getFutureListener().exception(e);
+					this.close();
 				}
 			} while (buffer.hasRemaining());
 		}
@@ -171,8 +177,9 @@ public class NioSession {
 	
 	public void storeFragment(ByteBuffer buffer)
 	{
+		System.out.println(buffer);
 		ByteBuffer fragment = ByteBuffer.allocate(buffer.remaining());
-		fragment.put(buffer.array(),buffer.position(),buffer.limit());
+		fragment.put(buffer.array(),buffer.position(),buffer.remaining());
 		this.fragment = fragment;
 	}
 	

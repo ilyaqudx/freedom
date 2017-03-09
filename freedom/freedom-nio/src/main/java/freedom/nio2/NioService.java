@@ -1,6 +1,7 @@
 package freedom.nio2;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 public interface NioService {
 
@@ -19,4 +20,6 @@ public interface NioService {
 	public NioChannelConfig getChannelConfig();
 	
 	public ServiceListener getServiceListener();
+	
+	public List<NioSession> getSessions();
 }

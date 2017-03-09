@@ -41,7 +41,7 @@ public class NioSession {
 	public long					writenAllBytes;
 	public long					readAllBytes;
 	public long					writeAllPackets;
-	public long					writenAllTime;
+	public long					writenAllTime = 1L;
 	public volatile boolean suspend;
 	
 	public NioSession(AbstractNioService service,SocketChannel channel)

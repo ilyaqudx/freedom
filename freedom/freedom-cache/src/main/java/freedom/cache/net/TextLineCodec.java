@@ -45,7 +45,8 @@ public class TextLineCodec extends AbstractProtocolCodec {
 			if(findCR && findLF){
 				//完整的命令
 				buffer.position(offset);
-				return Arrays.copyOfRange(array, start, offset - 2);
+				int end = offset - 2;
+				return end > start ? Arrays.copyOfRange(array, start, end) : null;
 			}
 		}
 		return null;

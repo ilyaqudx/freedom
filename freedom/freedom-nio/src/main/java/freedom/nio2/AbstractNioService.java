@@ -2,6 +2,8 @@ package freedom.nio2;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class AbstractNioService implements NioService {
 
@@ -14,6 +16,7 @@ public abstract class AbstractNioService implements NioService {
 	protected ServiceListener   listener;
 	protected volatile boolean active;
 	protected volatile long activationTime;
+	protected List<NioSession> sessions = new CopyOnWriteArrayList<NioSession>();
 	
 	public AbstractNioService(InetSocketAddress bindAddress,NioHandler handler, ProtocolCodec codec,NioChannelConfig channelConfig,
 			int processorCount,Class<? extends NioReactor> reactorCls,ServiceListener listener)
@@ -70,6 +73,12 @@ public abstract class AbstractNioService implements NioService {
 	{
 		return this.listener;
 	}
+	
+	@Override
+	public List<NioSession> getSessions()
+	{
+		return this.sessions;
+	}
 
 	public NioProcessorPool getProcessorPool()
 	{
@@ -77,7 +86,9 @@ public abstract class AbstractNioService implements NioService {
 	}
 	protected NioSession buildNewSession(SocketChannel channel)
 	{
-		return new NioSession(this, channel);
+		NioSession session = new NioSession(this, channel);
+		sessions.add(session);
+		return session;
 	}
 	public void start()
 	{

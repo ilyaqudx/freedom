@@ -16,9 +16,9 @@ public class CacheOperator {
 		}
 		else if(command == Command.DEL)
 		{
-			cache.remove(command.key);
+			return null == cache.remove(command.key) ? "0" : "1";
 		}
 		
-		return "success";
+		return "1";
 	}
 }

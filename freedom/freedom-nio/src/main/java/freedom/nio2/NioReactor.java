@@ -86,12 +86,15 @@ public abstract class NioReactor implements Runnable{
 	{
 		try 
 		{
-			if(this instanceof AcceptorReactor)
+			boolean isAcceptor  = this instanceof AcceptorReactor;
+			if(isAcceptor){
 				if(key.isAcceptable())
 					interest(key);
-			else if(this instanceof ConnectorReactor)
+			}
+			else{
 				if(key.isConnectable())
 					interest(key);
+			}
 		} 
 		catch (IOException e)
 		{

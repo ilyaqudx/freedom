@@ -50,7 +50,8 @@ public class NioProcessor implements Runnable{
 			if(reference.compareAndSet(null,this))
 				this.startup();
 		}
-		sel.wakeup();
+		if(!wakeup)
+			sel.wakeup();
 	}
 	
 	public void removeSession(NioSession session)

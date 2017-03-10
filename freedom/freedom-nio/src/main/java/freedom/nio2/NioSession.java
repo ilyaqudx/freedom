@@ -75,13 +75,8 @@ public class NioSession {
 		catch (Exception e)
 		{
 			e.printStackTrace();
-			try {
-				channel.close();
-				service.getHandler().onClosed(this);
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+			close();
+			service.getHandler().onClosed(this);
 		}
 	}
 	
@@ -196,7 +191,7 @@ public class NioSession {
 	public void close() 
 	{
 		if(null != processor){
-			processor.regiestSession(this);
+			processor.removeSession(this);
 		}
 		
 		//如果需要关闭SESSION,就要关闭SESSION所有的资源.这就是为什么需要DISPOSE的原因

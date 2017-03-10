@@ -1,36 +1,51 @@
 package freedom.cache.client;
 
-import java.util.Map;
-
-import freedom.nio2.NioService;
+import java.io.IOException;
 
 
-//session如何放入
 
 //文本行协议(支持TELNET)客户端不能使用非阻塞通信(无法附加信息来标识哪个请求对应哪个应答)
 public class JCache {
 	
-	private NioService service;
-
-	private Map<Long, V>
-	
-	public JCache(NioService service)
+	public static final String set(String key,String value)
 	{
-		this.service = service;
+		try {
+			return ConnectionManager.I().getConnection().write(String.format("set %s %s", key, value));
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
-	public String set(String key,String value)
+	public static final String get(String key)
 	{
-		this.service.getSessions().get(0).write(String.format("set %s %s", key,value));
+		try {
+			return ConnectionManager.I().getConnection().write(String.format("get %s", key));
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
-	public String get(String key)
+	public static final String del(String key)
 	{
-		return this.service.getSessions().get(0).write(String.format("get %s", key));
-	}
-	
-	public String del(String key)
-	{
-		return this.service.getSessions().get(0).write(String.format("del %s", key));
+		try {
+			return ConnectionManager.I().getConnection().write(String.format("get %s", key));
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 }

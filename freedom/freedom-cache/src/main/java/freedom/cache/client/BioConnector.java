@@ -15,13 +15,16 @@ public class BioConnector {
 	private ProtocolCodec codec;
 	public BioConnector(String hostname,int port,BioHandler handler,ProtocolCodec codec)
 	{
+		this(new InetSocketAddress(hostname, port),handler,codec);
+	}
+	public BioConnector(InetSocketAddress remoteAddress,BioHandler handler,ProtocolCodec codec)
+	{
 		this.handler = handler;
 		this.codec   = codec;
-		this.remoteAddress = new InetSocketAddress(hostname, port);
-		
+		this.remoteAddress = remoteAddress;
 	}
 	
-	public void start() throws IOException
+	public Connection connect() throws IOException
 	{
 		SocketChannel channel = SocketChannel.open();
 		channel.configureBlocking(true);
@@ -29,8 +32,8 @@ public class BioConnector {
 		if(channel.isConnected()){
 			System.out.println("client successed connected!");
 			Connection connection = buildConnection(channel.socket());
-			ConnectionManager.I.setConnection(connection);
 			this.handler.onCreated(connection);
+			return connection;
 		}else
 			throw new SocketException("connect fail!");
 	}

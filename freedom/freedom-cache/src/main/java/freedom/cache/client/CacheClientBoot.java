@@ -9,14 +9,15 @@ import java.util.Properties;
 public class CacheClientBoot {
 
 	
-	public static void main(String[] args) throws IOException 
+	public static void main(String[] args) throws IOException, InterruptedException 
 	{
-		BioConnector connector = new BioConnector("127.0.0.1", 6666, new BioHandler(), null);
-		//连接服务器
-		connector.start();
-		
 		List<ServerNode> servers = loadServer();
 		ServerNodeManager.I.addNode(servers);
+		String hello = ConnectionManager.I().getConnection().write("set name 张三哈!\r\n");
+		System.out.println(hello);
+		String hello2 = ConnectionManager.I().getConnection().write("get name\r\n");
+		System.out.println(hello2);
+		
 	}
 
 	private static List<ServerNode> loadServer() throws IOException 

@@ -7,4 +7,5 @@ public class Const {
 	public static final byte[] SET   = {115,101,116};
 	public static final byte[] GET   = {103,101,116};
 	public static final byte[] DEL   = {100,101,108};
+	public static final byte[] INNER = {91,105,110,110,101,114,93};
 }

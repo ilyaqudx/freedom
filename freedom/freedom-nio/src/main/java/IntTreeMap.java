@@ -1,3 +1,5 @@
+import java.util.concurrent.ArrayBlockingQueue;
+
 
 public class IntTreeMap {
 
@@ -5,7 +7,6 @@ public class IntTreeMap {
 	private int  size;
 	public static final boolean BLACK = true , RED = false;
 	
-	@SuppressWarnings("unused")
 	public int add(Integer key,int value)
 	{
 		if(key == null)throw new NullPointerException();
@@ -20,7 +21,8 @@ public class IntTreeMap {
 				t = t.left;
 			else if(cmp > 0)
 				t = t.right;
-			return t.value;
+			else
+				return t.value;
 		}
 		
 		Node x = new Node(key, value, p);
@@ -33,18 +35,73 @@ public class IntTreeMap {
 		
 		fixAfterInserted(x);
 		size++;
+		//print(root);
 		return 0;
 	}
 	
-	public static void main(String[] args) {
-		
+	public static void main(String[] args) 
+	{
 		IntTreeMap map = new IntTreeMap();
 		map.add(20, 20);
 		map.add(10, 10);
 		map.add(26, 26);
+		map.add(8, 8);
+		map.add(15, 15);
+		map.add(21, 21);
+		map.add(28, 28);
+		map.add(4, 4);
+		map.add(13, 13);
+		map.add(18, 18);
+		map.add(23, 23);
+		map.add(30, 30);
+		map.add(12, 12);
+		map.add(14, 14);
+		map.add(16, 16);
+		map.add(19, 19);
+		map.add(11, 11);
 		
+		map.print(map.root);
+		//map.inFor(map.root);
 	}
 	
+	public void print(Node node)
+	{
+		ArrayBlockingQueue<Node> queue = 
+				new ArrayBlockingQueue<Node>(200);
+		
+		queue.add(node);
+		Node last  = node;
+		Node nLast = node;
+		
+		while (!queue.isEmpty()) {  
+            Node out=queue.poll();  
+            if(out.color)
+            	System.out.print("黑" + out.value+" ");   
+            else
+            	System.out.print("红" + out.value+" ");
+            if (out.left!=null) {  
+                queue.add(out.left);  
+                nLast=out.left;  
+            }  
+            if (out.right!=null) {  
+                queue.add(out.right);  
+                nLast=out.right;  
+            }  
+            if (out==last) {  
+                System.out.println("");  
+                last=nLast;  
+            }  
+        }  
+	}
+	
+	public void inFor(Node node){
+		if(null == node)return;
+		inFor(node.left);
+		System.out.println(node.value);
+		inFor(node.right);
+	}
+	
+
 	private void fixAfterInserted(Node x)
 	{
 		setColor(x, RED);
@@ -77,20 +134,20 @@ public class IntTreeMap {
 					setColor(parentOf(x), BLACK);
 					//将祖父节点设为红
 					setColor(gradeOf(x), RED);
-					//再以x节点为中心,进行右旋转
-					rotateRight(x);
+					//再以祖父节点为中心,进行右旋转
+					rotateRight(gradeOf(x));
 				}
 			}else{
 				//父节点为右节点
 				
 				//获取叔父节点
-				Node r = leftOf(gradeOf(x));
+				Node l = leftOf(gradeOf(x));
 				//如果叔父节点也是红
-				if(colorOf(r) == RED){
+				if(colorOf(l) == RED){
 					//设置父为黑
 					setColor(parentOf(x), BLACK);
 					//设置叔父为黑
-					setColor(r, BLACK);
+					setColor(l, BLACK);
 					//设置祖父为红
 					setColor(gradeOf(x), RED);
 					//设置当前X为祖父
@@ -109,8 +166,8 @@ public class IntTreeMap {
 					setColor(parentOf(x), BLACK);
 					//设置祖父为红
 					setColor(gradeOf(x), RED);
-					//将X左旋
-					rotateLeft(x);
+					//将祖父左旋
+					rotateLeft(gradeOf(x));
 				}
 			}
 		}
@@ -118,6 +175,41 @@ public class IntTreeMap {
 		setColor(root, BLACK);
 	}
 	
+	/** From CLR */
+    private void rotateLeft2(Node p) {
+        if (p != null) {
+            Node r = p.right;
+            p.right = r.left;
+            if (r.left != null)
+                r.left.parent = p;
+            r.parent = p.parent;
+            if (p.parent == null)
+                root = r;
+            else if (p.parent.left == p)
+                p.parent.left = r;
+            else
+                p.parent.right = r;
+            r.left = p;
+            p.parent = r;
+        }
+    }
+
+    /** From CLR */
+    private void rotateRight2(Node p) {
+        if (p != null) {
+            Node l = p.left;
+            p.left = l.right;
+            if (l.right != null) l.right.parent = p;
+            l.parent = p.parent;
+            if (p.parent == null)
+                root = l;
+            else if (p.parent.right == p)
+                p.parent.right = l;
+            else p.parent.left = l;
+            l.right = p;
+            p.parent = l;
+        }
+    }
 	
 	/**
 	 * 以X节点为中心,进行向左旋转
@@ -221,7 +313,7 @@ public class IntTreeMap {
 	}
 	
 	private Node rightOf(Node n){
-		return n == null ? null : n.left;
+		return n == null ? null : n.right;
 	}
 	
 	private boolean colorOf(Node n){
@@ -251,6 +343,12 @@ public class IntTreeMap {
 			this.key = key;
 			this.value = value;
 			this.parent = parent;
+		}
+		@Override
+		public String toString() {
+			return "Node [key=" + key + ", value=" + value + ", left=" + left
+					+ ", right=" + right + ", parent=" + parent + ", color="
+					+ color + "]";
 		}
 	}
 }

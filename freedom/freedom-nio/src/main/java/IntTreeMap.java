@@ -39,6 +39,128 @@ public class IntTreeMap {
 		return 0;
 	}
 	
+	public void remove(Integer key)
+	{
+		if(key == null)return;
+		
+		Node x = getNode(key);
+		
+		if(x == null)return;
+		
+		if(x.left != null && x.right != null)
+		{
+			Node s = x.right;
+			while(s.left != null){
+				s = s.left;
+			}
+			x.key   = s.key;
+			x.value = s.value;
+			x = s;
+		}
+		
+		Node replacement = x.left != null ? x.left : x.right;
+		if(replacement == null){
+			//无子
+			if(x.color == BLACK)
+				fixAfterDeleted(x);
+			if(x.parent == null)
+				root = null;
+			else{
+				x.parent = null;
+				if(leftOf(parentOf(x)) == x)
+					x.parent.left = null;
+				else
+					x.parent.right = null;
+			}
+			
+		}else{
+			replacement.parent = x.parent;
+			if(x.parent == null)
+				root = replacement;
+			else if(leftOf(x.parent) == x)
+				x.parent.left = replacement;
+			else
+				x.parent.right = replacement;
+			x.parent = x.left = x.right = null;
+			if(replacement.color == BLACK)
+				fixAfterDeleted(replacement);
+		}
+	}
+	
+	private void fixAfterDeleted(Node x)
+	{
+		while(x != root && colorOf(x) == BLACK){
+			if(x == leftOf(parentOf(x))){
+				Node r = rightOf(parentOf(x));
+				if(colorOf(r) == RED){
+					setColor(r, BLACK);
+					setColor(parentOf(x), RED);
+					rotateLeft(parentOf(x));
+					r = rightOf(parentOf(x));
+				}
+				
+				if(BLACK == colorOf(leftOf(r)) == colorOf(rightOf(r))){
+					setColor(r, RED);
+					x = parentOf(x);
+				}else{
+					if(colorOf(rightOf(r)) == BLACK)
+					{
+						setColor(leftOf(r), BLACK);
+						setColor(r, RED);
+						rotateRight(r);
+						r = rightOf(parentOf(x));
+					}
+					
+					setColor(r, colorOf(parentOf(x)));
+					setColor(parentOf(x), RED);
+					setColor(rightOf(r), BLACK);
+					rotateLeft(parentOf(x));
+					x = root;
+				}
+			}else{
+				Node l = leftOf(parentOf(x));
+				if(colorOf(l) == RED){
+					setColor(l, BLACK);
+					setColor(parentOf(x), RED);
+					rotateRight(parentOf(x));
+					l = leftOf(parentOf(x));
+				}
+				
+				if(BLACK == colorOf(leftOf(l)) == colorOf(rightOf(l)))
+				{
+					setColor(l, RED);
+					x = parentOf(x);
+				}else{
+					if(colorOf(leftOf(l)) == BLACK){
+						setColor(rightOf(l), BLACK);
+						setColor(l, RED);
+						rotateLeft(l);
+						l = rightOf(parentOf(x));
+					}
+					
+					setColor(l, colorOf(parentOf(x)));
+					setColor(parentOf(x), RED);
+					setColor(rightOf(l), BLACK);
+					rotateRight(parentOf(x));
+					x = root;
+				}
+			}
+		}
+		setColor(x, BLACK);
+	}
+
+	private Node getNode(Integer key)
+	{
+		Node t = root;
+		while(t != null){
+			int cmp = key.compareTo(t.key);
+			if(cmp == 0)
+				break;
+			t = cmp < 0 ? t.left : t.right;
+		}
+		return t;
+	}
+	
 	public static void main(String[] args) 
 	{
 		IntTreeMap map = new IntTreeMap();
@@ -62,6 +184,7 @@ public class IntTreeMap {
 		
 		map.print(map.root);
 		//map.inFor(map.root);
+		map.remove(26);
 	}
 	
 	public void print(Node node)

@@ -82,7 +82,7 @@ public class IntTreeMap {
 			else
 				x.parent.right = replacement;
 			x.parent = x.left = x.right = null;
-			if(replacement.color == BLACK)
+			if(x.color == BLACK)
 				fixAfterDeleted(replacement);
 		}
 	}
@@ -112,7 +112,7 @@ public class IntTreeMap {
 					}
 					
 					setColor(r, colorOf(parentOf(x)));
-					setColor(parentOf(x), RED);
+					setColor(parentOf(x), BLACK);
 					setColor(rightOf(r), BLACK);
 					rotateLeft(parentOf(x));
 					x = root;
@@ -135,12 +135,12 @@ public class IntTreeMap {
 						setColor(rightOf(l), BLACK);
 						setColor(l, RED);
 						rotateLeft(l);
-						l = rightOf(parentOf(x));
+						l = leftOf(parentOf(x));
 					}
 					
 					setColor(l, colorOf(parentOf(x)));
-					setColor(parentOf(x), RED);
-					setColor(rightOf(l), BLACK);
+					setColor(parentOf(x), BLACK);
+					setColor(leftOf(l), BLACK);
 					rotateRight(parentOf(x));
 					x = root;
 				}

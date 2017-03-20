@@ -7,6 +7,9 @@ public class IntTreeMap {
 	private int  size;
 	public static final boolean BLACK = true , RED = false;
 	
+	/**
+	 * 添加节点
+	 * */
 	public int add(Integer key,int value)
 	{
 		if(key == null)throw new NullPointerException();
@@ -39,6 +42,9 @@ public class IntTreeMap {
 		return 0;
 	}
 	
+	/**
+	 * 删除节点
+	 * */
 	public void remove(Integer key)
 	{
 		if(key == null)return;
@@ -87,68 +93,113 @@ public class IntTreeMap {
 		}
 	}
 	
+	/**
+	 * 删除节点后平衡操作
+	 * */
 	private void fixAfterDeleted(Node x)
 	{
+		//X不是ROOT并且为黑
 		while(x != root && colorOf(x) == BLACK){
+			//如果为左节点
 			if(x == leftOf(parentOf(x))){
 				Node r = rightOf(parentOf(x));
+				//兄弟节点为红
 				if(colorOf(r) == RED){
+					//设兄弟为黑
 					setColor(r, BLACK);
+					//设父为红
 					setColor(parentOf(x), RED);
+					//父左旋
 					rotateLeft(parentOf(x));
+					//重新获取兄弟
 					r = rightOf(parentOf(x));
 				}
 				
+				//如果兄弟节点左右子节点都为黑(无子节点也算黑)
 				if(BLACK == colorOf(leftOf(r)) == colorOf(rightOf(r))){
+					//兄弟为红
 					setColor(r, RED);
+					//X 指定父节点
 					x = parentOf(x);
 				}else{
+					//如果兄弟的右子节点为黑
 					if(colorOf(rightOf(r)) == BLACK)
 					{
+						//设兄弟左子节点为黑
 						setColor(leftOf(r), BLACK);
+						//设兄弟为红
 						setColor(r, RED);
+						//兄弟右旋
 						rotateRight(r);
+						//重新获取兄弟节点
 						r = rightOf(parentOf(x));
 					}
 					
+					//设兄弟颜色同父节点颜色
 					setColor(r, colorOf(parentOf(x)));
+					//设父为黑
 					setColor(parentOf(x), BLACK);
+					//设兄弟右节点为黑
 					setColor(rightOf(r), BLACK);
+					//父左旋
 					rotateLeft(parentOf(x));
+					//x = root 即跳出循环
 					x = root;
 				}
-			}else{
+			}else{//X为右节点
+				
 				Node l = leftOf(parentOf(x));
+				//如果兄弟为红
 				if(colorOf(l) == RED){
+					//设兄弟为黑
 					setColor(l, BLACK);
+					//设父为红
 					setColor(parentOf(x), RED);
+					//父右旋
 					rotateRight(parentOf(x));
+					//重新获取兄弟节点
 					l = leftOf(parentOf(x));
 				}
 				
+				//如果兄弟左右子节点都为黑(或都为NULL)
 				if(BLACK == colorOf(leftOf(l)) == colorOf(rightOf(l)))
 				{
+					//设兄弟为红
 					setColor(l, RED);
+					//x指向父节点
 					x = parentOf(x);
 				}else{
+					//如果兄弟左节点为黑
 					if(colorOf(leftOf(l)) == BLACK){
+						//设兄弟右节点为黑
 						setColor(rightOf(l), BLACK);
+						//设兄弟为红
 						setColor(l, RED);
+						//兄弟左旋
 						rotateLeft(l);
+						//重新获取兄弟
 						l = leftOf(parentOf(x));
 					}
-					
+					//设置兄弟颜色同父颜色
 					setColor(l, colorOf(parentOf(x)));
+					//设置父为黑
 					setColor(parentOf(x), BLACK);
+					//设置兄弟左节点为黑
 					setColor(leftOf(l), BLACK);
+					//父右旋
 					rotateRight(parentOf(x));
+					//设x = root 即跳出循环
 					x = root;
 				}
 			}
 		}
+		//设X为黑
 		setColor(x, BLACK);
 	}
 
+	/**
+	 * 根据key获取节点
+	 * */
 	private Node getNode(Integer key)
 	{
 		Node t = root;
@@ -217,6 +268,9 @@ public class IntTreeMap {
         }  
 	}
 	
+	/**
+	 * 中序遍历
+	 * */
 	public void inFor(Node node){
 		if(null == node)return;
 		inFor(node.left);
@@ -225,6 +279,9 @@ public class IntTreeMap {
 	}
 	
 
+	/**
+	 * 新增节点后平衡操作
+	 * */
 	private void fixAfterInserted(Node x)
 	{
 		setColor(x, RED);

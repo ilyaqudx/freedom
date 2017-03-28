@@ -12,9 +12,30 @@ import freedom.game.GameManager;
 import freedom.game.module.robot.Robot;
 import freedom.game.module.robot.RobotManager;
 import freedom.game.module.room.sender.TableMessageSender;
-import freedom.game.module.table.CardUtil;
+import freedom.game.module.table.MajongService;
 import freedom.hall.module.room.entity.Room;
 
+
+/**
+ * 
+ * 麻将桌的设计
+ * 
+ * 
+ * Table  对应现实中的牌桌
+ * 			功能:[牌组,庄家,当前玩家,当前出牌,当前牌桌状态,已出牌集合,操作集合,玩家列表,超时倒计时,麻将规则,麻将逻辑]
+ * 			牌桌状态:(具体的逻辑都有LOGIC根据RULE制定的规则去执行)
+ * 				等待:
+ * 					
+ * 				游戏中:
+ * 					摸牌/打牌/响应
+ * 				结算:
+ * Rule   规则章程(对应现实中的规则)
+ * 			功能:规定包含的规则如:牌型(金勾钓,将对,么九),番型(大对对应的番),操作(碰,吃,胡,杠)
+ * 				是否能抢杠,是否能多响,未过庄是否能胡,查叫查大还是查小,花猪赔叫.
+ * Logic  游戏桌逻辑的处理,按规则执行逻辑
+ * 			
+ * 					
+ * */
 public class Table {
 
 	private long id;
@@ -293,7 +314,7 @@ public class Table {
 						.sendWaitResponseAfterPutCard(this);
 						timeoutInPlaying(PlayingState.WAIT_RESPONSE, 5000);
 					}*/
-					if(CardUtil.hasResponseAfterPutCard(currentPlayer))
+					if(MajongService.hasResponseAfterPutCard(currentPlayer))
 					{
 						GameManager.context.getBean(TableMessageSender.class)
 						.sendWaitResponseAfterPutCard(this);
@@ -321,7 +342,7 @@ public class Table {
 					.sendPlayerOutCard(this);
 					
 					//打牌后判断是否有玩家可以有响应(胡/杠/碰)
-					List<Player> responsePlayers = CardUtil.hasResponse(this);
+					List<Player> responsePlayers = MajongService.hasResponse(this);
 					if(responsePlayers.isEmpty())
 						logic.nextPlayerPutCard();
 					else

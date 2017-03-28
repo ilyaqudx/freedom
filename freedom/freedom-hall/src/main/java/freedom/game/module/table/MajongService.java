@@ -13,7 +13,7 @@ import freedom.game.module.table.entity.Player;
 import freedom.game.module.table.entity.Table;
 
 
-public class CardUtil {
+public class MajongService {
 
 	public static void main(String[] args) 
 	{

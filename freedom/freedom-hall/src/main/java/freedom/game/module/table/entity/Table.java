@@ -337,7 +337,7 @@ public class Table {
 				{
 					System.out.println("等待玩家 " +this.currentPlayer.getName()+ "打牌超时");
 					//如果超时还没有打牌,则摸什么打什么
-					this.currentPlayer.outCard();
+					this.currentPlayer.autoOutCard();
 					GameManager.context.getBean(TableMessageSender.class)
 					.sendPlayerOutCard(this);
 					

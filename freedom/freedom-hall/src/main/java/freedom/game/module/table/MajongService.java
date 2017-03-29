@@ -369,8 +369,6 @@ public class MajongService {
 		List<Card> checkCard = new ArrayList<Card>();
 		checkCard.addAll(tempHandCard);
 		
-		
-		
 		while(checkCard.size() >= 2){
 			hasDouble = false;
 			checkCard.clear();
@@ -601,7 +599,7 @@ public class MajongService {
 		QING_YI_SE(2),
 		QING_DA_DUI(3),
 		QING_QI_DUI(4),
-		QING_LONG_QI_DUI(4);
+		QING_LONG_QI_DUI(5);
 		
 		
 		private int fan;

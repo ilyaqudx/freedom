@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import freedom.game.module.room.manager.RoomManager;
 import freedom.game.module.room.sender.TableMessageSender;
-import freedom.game.module.table.CardUtil;
+import freedom.game.module.table.MajongService;
 import freedom.game.module.table.entity.Card;
 import freedom.game.module.table.entity.Operator;
 import freedom.game.module.table.entity.Operator.OPT;
@@ -51,7 +51,7 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 					boolean isGangFlag = currentPlayer.isGangFlag();
 					//再次检查是否能胡
 					boolean hu = 
-							CardUtil.canHu(player.getHandCard(),isSelf ? null : targetCard);
+							MajongService.canHu(player.getHandCard(),isSelf ? null : targetCard);
 					if(hu)
 					{
 						int huType = isSelf? (isGangFlag ? Player.HU_TYPE_GANG_SHANG_HUA
@@ -91,7 +91,7 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 										for (int i = handCard.size() - 1; i >= 0; i -- )
 										{
 											Card c = handCard.get(i);
-											if(CardUtil.sameCard(c, gangCard))
+											if(MajongService.sameCard(c, gangCard))
 											{
 												gangGroupItem.add(c);
 												handCard.remove(i);
@@ -115,7 +115,7 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 										//检查碰杠
 										for (List<Card> pengOrCard : player.getPengCardList()) 
 										{
-											if(pengOrCard.size() == 3 && CardUtil.sameCard(pengOrCard.get(0), gangCard))
+											if(pengOrCard.size() == 3 && MajongService.sameCard(pengOrCard.get(0), gangCard))
 											{
 												pengOrCard.add(gangCard);
 												//处理巴杠
@@ -141,7 +141,7 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 									for (int i = handCard.size() - 1; i >= 0; i -- )
 									{
 										Card c = handCard.get(i);
-										if(CardUtil.sameCard(c, outCard))
+										if(MajongService.sameCard(c, outCard))
 										{
 											gangGroupItem.add(c);
 											handCard.remove(i);
@@ -178,7 +178,7 @@ public class ResponseOptCommand extends AbstractCommand<ResponseOptMessage> {
 							for (int i = handCard.size() - 1; i >= 0; i -- )
 							{
 								Card c = handCard.get(i);
-								if(CardUtil.sameCard(c, outCard))
+								if(MajongService.sameCard(c, outCard))
 								{
 									pengGroupItem.add(c);
 									handCard.remove(i);

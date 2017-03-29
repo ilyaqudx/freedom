@@ -42,7 +42,7 @@ public abstract class AbstractGameTable implements GameTable {
 	{
 		this.gameRule  = gameRule;
 		this.gameLogic = gameLogic;
-		this.players = new ArrayList<>(gameRule.getChairCount());
+		this.players = new ArrayList<Player>(gameRule.getChairCount());
 	}
 	
 	@Override

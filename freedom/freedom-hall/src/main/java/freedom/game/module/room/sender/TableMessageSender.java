@@ -34,6 +34,13 @@ public class TableMessageSender {
 	@Autowired
 	private SessionManager sessionManager;
 	
+	public static TableMessageSender I = null;
+	
+	public TableMessageSender()
+	{
+		I = this;
+	}
+	
 	public final void sendEntryRoomMessage(Player player,Table table)
 	{
 		NotifyEntryRoomMessage message = new NotifyEntryRoomMessage();

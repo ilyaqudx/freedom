@@ -2,7 +2,6 @@ package freedom.game.module.table.entity;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,6 +34,7 @@ public class Player {
 	private Player dianPaoPlayer;
 	private int huType;
 	private boolean hu;
+	public boolean isOperator;//是否已操作(结束时置为false)
 	
 	public static final int HU_TYPE_DIAN_PAO = 1,HU_TYPE_GANG_SHANG_PAO = 2,
 			HU_TYPE_QIANG_GANG = 3 , HU_TYPE_GANG_SHANG_HUA = 4,
@@ -119,19 +119,29 @@ public class Player {
 		Collections.sort(handCard);
 	}
 	
-	public Card outCard()
+	/**由AI自动出牌
+	 * @return
+	 */
+	public Card autoOutCard()
 	{
 		Card card = handCard.get(0/*handCard.size() -1*/);
 		outCard(card,false);
 		return card;
 	}
 	
-	public void outCard(Card card,boolean gangFlag)
+	/**
+	 * 玩家手动出牌,记录下来
+	 * */
+	public void addOutCard(Card card)
 	{
 		this.outCard = card;
-		boolean remove = handCard.remove(card);
-		System.out.println("本家出牌删除出牌结果: " + remove + " : " + card);
+	}
+	
+	public void outCard(Card outCard,boolean gangFlag)
+	{
 		this.gangFlag = gangFlag;
+		boolean remove = handCard.remove(outCard);
+		System.out.println("本家出牌删除出牌结果: " + remove + " : " + outCard);
 	}
 	
 	

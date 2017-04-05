@@ -1,9 +1,9 @@
 package freedom.jdfs.command;
 
-import freedom.jdfs.protocol.RecvPackageInfo;
+import freedom.jdfs.protocol.PacketHeader;
 
 public interface Command {
 
 	
-	public void execute(RecvPackageInfo packet);
+	public void execute(PacketHeader packet);
 }

@@ -1,11 +1,11 @@
 package freedom.jdfs.handler;
 
 import freedom.jdfs.protocol.ProtoCommon;
-import freedom.jdfs.protocol.RecvPackageInfo;
+import freedom.jdfs.protocol.PacketHeader;
 
 public class CmdRouter {
 
-	public static final void route(RecvPackageInfo packet)
+	public static final void route(PacketHeader packet)
 	{
 		if(packet.cmd == ProtoCommon.STORAGE_PROTO_CMD_UPLOAD_FILE)
 		{

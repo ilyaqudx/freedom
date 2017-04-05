@@ -1,19 +1,20 @@
 package freedom.jdfs.nio;
 
 import java.io.IOException;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 
-import freedom.jdfs.codec.Codec;
+import org.apache.log4j.Logger;
+
+import freedom.jdfs.storage.StorageTask;
 
 public class NioProcessor {
 
+	Logger LOGGER = Logger.getLogger(NioProcessor.class); 
 	public final int id;
 	public final String name;
 	private Selector sel;
@@ -69,8 +70,10 @@ public class NioProcessor {
 			for (Iterator<SelectionKey> it = selectedKeys.iterator();it.hasNext();) 
 			{
 				SelectionKey key = it.next();
-				if (key.isReadable())
+				if (key.isReadable()){
 					read(key);
+					//此处读事件,不能按照常规直接就删除
+				}
 				else if(key.isWritable())
 					write(key);
 				it.remove();
@@ -85,43 +88,23 @@ public class NioProcessor {
 		private void read(SelectionKey key)
 		{
 			NioSession session = ((NioSession) key.attachment());
-			SocketChannel channel = session.getChannel();
-			try 
+			if ((session.task.stage & StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD) > 0)
 			{
-				ByteBuffer newBuffer = ByteBuffer.allocate(channel.getOption(StandardSocketOptions.SO_RCVBUF));
-				int len = channel.read(newBuffer);
-				if (len > 0) 
-				{
-					ByteBuffer data = newBuffer;
-					if(session.hasFragment())
-					{
-						data = mergeBuffer(session.pollFragment(),newBuffer);
-					}
-					data.flip();//设置为读模式
-					int start = data.position();
-					while(data.hasRemaining() && Codec.decode(session, data))
-					{
-						if(start == data.position())
-							break;
-						start = data.position();
-					}
-					
-					if(data.hasRemaining())
-					{
-						session.storeFragment(data);
-					}
-				}
-
+				session.task.stage &= ~StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
 			}
-			catch (IOException e) 
+			switch(session.task.stage)
 			{
-				e.printStackTrace();
-				try {
-					channel.close();
-				} catch (IOException ex) {
-					ex.printStackTrace();
-				}
-			} 
+				case StorageTask.FDFS_STORAGE_STAGE_NIO_INIT:
+					init(session.task);
+					break;
+				case StorageTask.FDFS_STORAGE_STAGE_NIO_RECV:
+					break;
+			}
+		}
+		
+		private void init(StorageTask task)
+		{
+			//注册读事件
 		}
 
 		private ByteBuffer mergeBuffer(ByteBuffer fragment, ByteBuffer newBuffer)

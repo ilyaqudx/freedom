@@ -60,8 +60,6 @@ public class NioAcceptor {
 				SelectionKey key = keys.next();
 				if(key.isAcceptable())
 				   accept(key);
-				else if(key.isReadable())
-					read(key);
 				keys.remove();
 			}
 		}
@@ -74,11 +72,6 @@ public class NioAcceptor {
 				return;
 			running = false;
 		}
-	}
-
-	private void read(SelectionKey key) 
-	{
-		
 	}
 
 	private void accept(SelectionKey key)

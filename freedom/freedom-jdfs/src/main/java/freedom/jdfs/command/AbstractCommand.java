@@ -1,11 +1,11 @@
 package freedom.jdfs.command;
 
-import freedom.jdfs.protocol.RecvPackageInfo;
+import freedom.jdfs.protocol.PacketHeader;
 
 public abstract class AbstractCommand implements Command {
 
 	@Override
-	public void execute(RecvPackageInfo packet)
+	public void execute(PacketHeader packet)
 	{
 		try 
 		{

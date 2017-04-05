@@ -7,4 +7,6 @@
   </parent>
   <artifactId>freedom-jdfs</artifactId>
   <packaging>jar</packaging>
+  <dependencies>
+  </dependencies>
 </project>

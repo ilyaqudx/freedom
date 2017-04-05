@@ -30,6 +30,13 @@ public class ProtoCommon
 		}
 	}
 	
+	
+	public static final int MAX_PATH_SIZE = 256;
+	public static final int HEADER_LENGTH = 10;
+	
+	
+	//////////////////////////////////////
+	
 	public static final byte FDFS_PROTO_CMD_QUIT      = 82;
 	public static final byte TRACKER_PROTO_CMD_SERVER_LIST_GROUP     = 91;
 	public static final byte TRACKER_PROTO_CMD_SERVER_LIST_STORAGE   = 92;
@@ -221,12 +228,12 @@ public class ProtoCommon
 * @param expect_body_len expect response package body length
 * @return RecvPackageInfo: errno and reponse body(byte buff)
 */
-	public static RecvPackageInfo recvPackage(InputStream in, byte expect_cmd, long expect_body_len) throws IOException
+	public static PacketHeader recvPackage(InputStream in, byte expect_cmd, long expect_body_len) throws IOException
 	{
 		RecvHeaderInfo header = recvHeader(in, expect_cmd, expect_body_len);
 		if (header.errno != 0)
 		{
-			return new RecvPackageInfo(header.errno, null);
+			return new PacketHeader(header.errno, null);
 		}
 		
 		byte[] body = new byte[(int)header.body_len];
@@ -250,7 +257,7 @@ public class ProtoCommon
 			throw new IOException("recv package size " + totalBytes + " != " + header.body_len);
 		}
 		
-		return new RecvPackageInfo((byte)0, body);
+		return new PacketHeader((byte)0, body);
 	}
 
 /**

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import freedom.jdfs.nio.NioSession;
-import freedom.jdfs.protocol.RecvPackageInfo;
+import freedom.jdfs.protocol.PacketHeader;
 
 public class Codec {
 
@@ -23,7 +23,7 @@ public class Codec {
 					byte[] body = new byte[(int) pkgLen];
 					buffer.get(body);
 					
-					RecvPackageInfo packet = new RecvPackageInfo(errno, body);
+					PacketHeader packet = new PacketHeader(errno, body);
 					return true;
 				}
 			}else

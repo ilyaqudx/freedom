@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import freedom.jdfs.storage.StorageTask;
+
 public class NioSession {
 
 	private SocketChannel channel;
@@ -19,11 +21,15 @@ public class NioSession {
 	private Map<String,Object> attrs = new HashMap<String,Object>();
 	static final String FRAGMENT = "fragment";
 	private SelectionKey key;
+	public ByteBuffer buffer = ByteBuffer.allocate(256 * 1024);
+	public StorageTask task;
+	private ByteBuffer headerFragment = ByteBuffer.allocate(9);
 	public NioSession(SocketChannel channel)
 	{
 		this.channel = channel;
 		this.id      = unionIdCreater.incrementAndGet();
 		this.name    = "NioSession-" + id;
+		this.task    = new StorageTask();
 	}
 
 	public void setProcessor(NioProcessor processor) {
@@ -75,4 +81,40 @@ public class NioSession {
 	{
 		return (ByteBuffer) attrs.get(FRAGMENT);
 	}
+	
+	/**
+	 * 获取头部片断长度
+	 * */
+	public int headerFragmentLength()
+	{
+		//直接用Buffer的position作为头部版本的长度,是因为写入过后,position会更新位置,下次再写入的时候就直接写入而不会覆盖掉之前的数据
+		return headerFragment.position();
+	}
+
+	/**
+	 * 暂存头部片断,
+	 * */
+	public void storeHeaderFragment(int len) 
+	{
+		headerFragment.put(buffer);
+	}
+	
+
+	/**
+	 * 合并头部片断
+	 * */
+	public void mergeHeader2Buffer()
+	{
+		if(buffer.capacity() - buffer.position() >= headerFragment.position())
+		{
+			//现有BUFFER可以装入所有的头数据,直接合并
+			byte[] array = buffer.array();
+			System.arraycopy(array, 0, array, headerFragmentLength(), buffer.position());
+			System.arraycopy(headerFragment.array(), 0, array, 0, headerFragmentLength());
+		}else{
+			//TODO
+			
+		}
+	}
+
 }

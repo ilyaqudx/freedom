@@ -3,16 +3,16 @@ package freedom.jdfs.storage;
 public class StorageClientInfo {
 
 	int nio_thread_index;  //nio thread index
-	boolean canceled;
-	byte stage;  //nio stage, send or recv
+	public boolean canceled;
+	public byte stage;  //nio stage, send or recv
 	byte[] storage_server_id;// 16= new byte[ProtoCommon.FDFS_STORAGE_ID_MAX_SIZE];
 
 	StorageFileContext file_context;
 
-	long total_length;   //pkg total length for req and request
-	long total_offset;   //pkg current offset for req and request
+	public long total_length;   //request total length
+	public long total_offset;   //request total offset
 
-	long request_length;   //request pkg length for access log
+	public long request_length;   //request pkg length for access log
 
 	//FDFSStorageServer pSrcStorage;
 	TaskDealFunc deal_func;  //function pointer to deal this task

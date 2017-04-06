@@ -30,7 +30,8 @@ public class ProtoCommon
 		}
 	}
 	
-	
+	public static final int g_fdfs_network_timeout = 0x8000;
+	public static final int IOEVENT_TIMEOUT  =  0x8000;
 	public static final int MAX_PATH_SIZE = 256;
 	public static final int HEADER_LENGTH = 10;
 	

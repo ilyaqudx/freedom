@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.StorageTask;
 
 public class NioSession {
@@ -47,6 +48,8 @@ public class NioSession {
 			try
 			{
 				key = channel.register(sel, SelectionKey.OP_READ,this);
+				//set task stage is recv data
+				this.task.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;
 			}
 			catch (IOException e) 
 			{

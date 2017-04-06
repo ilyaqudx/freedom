@@ -8,6 +8,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
+import freedom.jdfs.storage.StorageTaskPool;
+
 public class NioAcceptor {
 
 	private InetSocketAddress address;
@@ -118,6 +120,7 @@ public class NioAcceptor {
 		NioSession session = newSession(channel);
 		NioProcessor processor = getProcessor(session);
 		processor.addNewSession(session);
+		session.task = StorageTaskPool.obtain();
 		return session;
 	}
 }

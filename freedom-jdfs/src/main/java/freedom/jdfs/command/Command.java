@@ -1,9 +1,10 @@
 package freedom.jdfs.command;
 
-import freedom.jdfs.protocol.PacketHeader;
+import freedom.jdfs.nio.NioSession;
+import freedom.jdfs.storage.StorageTask;
 
 public interface Command {
 
 	
-	public void execute(PacketHeader packet);
+	public int execute(NioSession session,StorageTask storageTask);
 }

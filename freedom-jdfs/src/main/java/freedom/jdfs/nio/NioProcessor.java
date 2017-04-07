@@ -10,6 +10,7 @@ import java.util.Set;
 
 import org.apache.log4j.Logger;
 
+import freedom.jdfs.handler.CommandRouter;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageTask;
@@ -209,14 +210,7 @@ public class NioProcessor {
 
 		private void storage_deal_task(NioSession session,StorageTask storageTask) 
 		{
-			byte cmd = storageTask.buffer.get(9);
-			switch(cmd){
-			case ProtoCommon.STORAGE_PROTO_CMD_UPLOAD_FILE:
-				//TODO ACCESS_LOG_INIT_FIELDS();
-				storage_upload_file(session,storageTask,false);
-				//TODO STORAGE_ACCESS_LOG(pTask,ACCESS_LOG_ACTION_UPLOAD_FILE,result);
-			break;
-			}
+			CommandRouter.route(session, storageTask);
 		}
 
 		private void storage_upload_file(NioSession session,

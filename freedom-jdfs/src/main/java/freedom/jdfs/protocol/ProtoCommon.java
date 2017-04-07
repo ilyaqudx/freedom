@@ -513,4 +513,107 @@ public class ProtoCommon
         return master_filename.substring(0, dotIndex) + prefix_name + true_ext_name;
     }
 	}
+ 
+ 
+ 
+ 
+ 	/**
+ 	 * error code
+ 	 * */
+ public static final int	EPERM	=	 1;	/* Operation not permitted */
+ public static final int	ENOENT	=	 2;	/* No such file or directory */
+ public static final int	ESRCH	=	 3;	/* No such process */
+ public static final int	EINTR	=	 4;	/* Interrupted system call */
+ public static final int	EIO		=	 5;	/* I/O error */
+ public static final int	ENXIO	=	 6;	/* No such device or address */
+ public static final int	E2BIG	=	 7;	/* Argument list too long */
+ public static final int	ENOEXEC	=	 8;	/* Exec format error */
+ public static final int	EBADF	=	 9;	/* Bad file number */
+ public static final int	ECHILD	=	10;	/* No child processes */
+ public static final int	EAGAIN	=	11;	/* Try again */
+ public static final int	ENOMEM	=	12;	/* Out of memory */
+ public static final int	EACCES	=	13;	/* Permission denied */
+ public static final int	EFAULT	=	14;	/* Bad address */
+ public static final int	ENOTBLK	=	15;	/* Block device required */
+ public static final int	EBUSY	=	16;	/* Device or resource busy */
+ public static final int	EEXIST	=	17;	/* File exists */
+ public static final int	EXDEV	=	18;	/* Cross-device link */
+ public static final int	ENODEV	=	19;	/* No such device */
+ public static final int	ENOTDIR	=	20;	/* Not a directory */
+ public static final int	EISDIR	=	21;	/* Is a directory */
+ public static final int	EINVAL	=	22;	/* Invalid argument */
+ public static final int	ENFILE	=	23;	/* File table overflow */
+ public static final int	EMFILE	=	24;	/* Too many open files */
+ public static final int	ENOTTY	=	25;	/* Not a typewriter */
+ public static final int	ETXTBSY	=	26;	/* Text file busy */
+ public static final int	EFBIG	=	27;	/* File too large */
+ public static final int	ENOSPC	=	28;	/* No space left on device */
+ public static final int	ESPIPE	=	29;	/* Illegal seek */
+ public static final int	EROFS	=	30;	/* Read-only file system */
+ public static final int	EMLINK	=	31;	/* Too many links */
+ public static final int	EPIPE	=	32;	/* Broken pipe */
+ public static final int	EDOM	=	33;	/* Math argument out of domain of func */
+ public static final int	ERANGE	=	34;	/* Math result not representable */
+ 
+ 
+ 
+ 
+ 
+ /**
+  * File Type
+  * */
+ public static final byte _FILE_TYPE_APPENDER = 1;
+ public static final byte _FILE_TYPE_TRUNK    = 2;   //if trunk file, since V3.0
+ public static final byte _FILE_TYPE_SLAVE    = 4;
+ public static final byte _FILE_TYPE_REGULAR  = 8;
+ public static final byte _FILE_TYPE_LINK     = 16;
+ 
+ /**
+  * storage sync
+  * */
+ public static final byte STORAGE_OP_TYPE_SOURCE_CREATE_FILE	 = 'C';  //upload file
+ public static final byte STORAGE_OP_TYPE_SOURCE_APPEND_FILE	 = 'A';  //append file
+ public static final byte STORAGE_OP_TYPE_SOURCE_DELETE_FILE	 = 'D';  //delete file
+ public static final byte STORAGE_OP_TYPE_SOURCE_UPDATE_FILE	 = 'U';  //for whole file update such as metadata file
+ public static final byte STORAGE_OP_TYPE_SOURCE_MODIFY_FILE	 = 'M';  //for part modify
+ public static final byte STORAGE_OP_TYPE_SOURCE_TRUNCATE_FILE	 = 'T';  //truncate file
+ public static final byte STORAGE_OP_TYPE_SOURCE_CREATE_LINK	 = 'L';  //create symbol link
+ public static final byte STORAGE_OP_TYPE_REPLICA_CREATE_FILE	 = 'c';
+ public static final byte STORAGE_OP_TYPE_REPLICA_APPEND_FILE	 = 'a';
+ public static final byte STORAGE_OP_TYPE_REPLICA_DELETE_FILE	 = 'd';
+ public static final byte STORAGE_OP_TYPE_REPLICA_UPDATE_FILE	 = 'u';
+ public static final byte STORAGE_OP_TYPE_REPLICA_MODIFY_FILE	 = 'm';
+ public static final byte STORAGE_OP_TYPE_REPLICA_TRUNCATE_FILE	 = 't';
+ public static final byte STORAGE_OP_TYPE_REPLICA_CREATE_LINK	 = 'l';
+
+ public static final int STORAGE_BINLOG_BUFFER_SIZE		 = 64 * 1024;
+ public static final int STORAGE_BINLOG_LINE_SIZE		 = 256;
+ 
+ /**
+  * storage nio op
+  * */
+ 
+ public static final byte FDFS_STORAGE_FILE_OP_READ      = 'R';
+ public static final byte FDFS_STORAGE_FILE_OP_WRITE     = 'W';
+ public static final byte FDFS_STORAGE_FILE_OP_APPEND    = 'A';
+ public static final byte FDFS_STORAGE_FILE_OP_DELETE    = 'D';
+ public static final byte FDFS_STORAGE_FILE_OP_DISCARD   = 'd';
+ 
+ 
+ /* open/fcntl - O_SYNC is only implemented on blocks devices and on files
+ located on a few file systems.  */
+ public static final int  O_ACCMODE	    = 0x0003;
+ public static final int  O_RDONLY	    = 0x00;
+ public static final int  O_WRONLY	    = 0x01;
+ public static final int  O_RDWR		= 0x02;
+ public static final int  O_CREAT		= 0x0100;	/* not fcntl */
+ public static final int  O_EXCL		= 0x0200;	/* not fcntl */
+ public static final int  O_NOCTTY	    = 0x0400;	/* not fcntl */
+ public static final int  O_TRUNC		= 0x01000;	/* not fcntl */
+ public static final int  O_APPEND	    = 0x02000;
+ public static final int  O_NONBLOCK	= 0x04000;
+ public static final int  O_NDELAY	    = O_NONBLOCK;
+ public static final int  O_SYNC	    = 0x04010000;
+ public static final int  O_FSYNC		= O_SYNC;
+ public static final int  O_ASYNC		= 0x020000;
 }

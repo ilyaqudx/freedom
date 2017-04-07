@@ -1,21 +1,17 @@
 package freedom.jdfs.command;
 
-import freedom.jdfs.protocol.PacketHeader;
+import freedom.jdfs.nio.NioSession;
+import freedom.jdfs.storage.StorageTask;
+
 
 public abstract class AbstractCommand implements Command {
 
-	@Override
-	public void execute(PacketHeader packet)
-	{
-		try 
-		{
-			doExecute(packet.body);
-		} 
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-	}
 	
-	public abstract void doExecute(byte[] data)throws Exception;
+	
+	@Override
+	public int execute(NioSession session, StorageTask storageTask) 
+	{
+		return 0;
+	}
+
 }

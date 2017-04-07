@@ -17,7 +17,7 @@ public class StorageTask {
 			FDFS_STORAGE_STAGE_DIO_THREAD 	= 8;
 	
 	public ByteBuffer buffer = ByteBuffer.allocate(DEFAULT_BUFFER_CAPACITY);
-	public byte[] clientIp;//16
+	public byte[] client_ip;//16
 	public byte[] arg;//扩展参数
 	public byte[] data;//数据实体
 	public int    size;//分配的大小,default 256K
@@ -26,6 +26,7 @@ public class StorageTask {
 	public long  req_count;//请求数量,暂时不知道干什么
 	public int   stage;
 	public StorageClientInfo clientInfo;//client request info
+	public StorageFileContext fileContext;//upload file context
 	StorageTask next;
 	
 	

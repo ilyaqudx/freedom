@@ -4,5 +4,5 @@ public class FDFSTrunkFullInfo {
 
 	byte status;  //normal or hold
 	public FDFSTrunkPathInfo path;
-	FDFSTrunkFileInfo file;
+	public FDFSTrunkFileInfo file;
 }

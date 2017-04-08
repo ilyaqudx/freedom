@@ -30,6 +30,12 @@ public class ProtoCommon
 		}
 	}
 	
+	public static final int FDFS_FILE_DIST_DEFAULT_ROTATE_COUNT = 100;
+	
+	//the mode of the files distributed to the data path
+	public static final int FDFS_FILE_DIST_PATH_ROUND_ROBIN = 	0 ; //round robin
+	public static final int  FDFS_FILE_DIST_PATH_RANDOM	 = 1;  //random
+	
 	public static final String FDFS_STORAGE_DATA_DIR_FORMAT = "%02x";
 	
 	public static final int g_fdfs_network_timeout = 0x8000;

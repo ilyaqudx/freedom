@@ -1,5 +1,8 @@
 package freedom.jdfs.command;
 
+import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_DIST_PATH_ROUND_ROBIN;
+import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN;
+import static freedom.jdfs.protocol.ProtoCommon.FDFS_STORAGE_DATA_DIR_FORMAT;
 import freedom.jdfs.LogKit;
 import freedom.jdfs.nio.NioSession;
 import freedom.jdfs.protocol.ProtoCommon;
@@ -10,6 +13,7 @@ import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
 import freedom.jdfs.storage.StorageTask;
 import freedom.jdfs.storage.TaskDealFunc;
+import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
 
 public class UploadFileCommand implements Command {
 
@@ -156,7 +160,7 @@ public class UploadFileCommand implements Command {
 			if ((result=storage_get_filename(clientInfo, 
 				fileContext.extra_info.upload.start_time, 
 				file_bytes, crc32, fileContext.extra_info.upload.
-				formatted_ext_name, filename, filename_len, //TODO storage file name length
+				formatted_ext_name, new String(filename), filename_len, //TODO storage file name length
 				fileContext.filename)) != 0)
 			{
 				return result;
@@ -227,12 +231,139 @@ public class UploadFileCommand implements Command {
 		};
 	}
 
+	/**
+	 * Notice
+	 * */
 	private int storage_get_filename(StorageClientInfo clientInfo,
-			long start_time, long file_bytes, int crc32,
-			byte[] formatted_ext_name, byte[] filename, int filename_len,
-			byte[] filename2) {
-		// TODO Auto-generated method stub
+			long start_time, long file_size, int crc32,
+			byte[] szFormattedExt, String filename, int filename_len,
+			byte[] full_filename) 
+	{
+		int i;
+		int result;
+		int store_path_index; 
+		String fullFileName;
+		store_path_index = clientInfo.file_context.extra_info.upload.trunk_info.path.store_path_index;
+		for (i=0; i<10; i++)
+		{
+			if ((result=storage_gen_filename(clientInfo, file_size, 
+				crc32, szFormattedExt, FDFS_FILE_EXT_NAME_MAX_LEN+1, 
+				start_time, filename, filename_len)) != 0)
+			{
+				return result;
+			}
+			fullFileName = String.format("%s/data/%s", Globle.g_fdfs_store_paths.paths[store_path_index], filename);
+			if (!Globle.existFile(fullFileName))
+			{
+				break;
+			}
+		}
 		return 0;
+
+	}
+
+	@SuppressWarnings("restriction")
+	private int storage_gen_filename(StorageClientInfo clientInfo,
+			long file_size, int crc32, byte[] szFormattedExt, int ext_name_len,
+			long timestamp, String filename, int filename_len)
+	{
+
+		byte[] buff = new byte[20];
+		byte[] encoded = new byte[33];
+		int len;
+		long masked_file_size;
+		FDFSTrunkFullInfo pTrunkInfo = clientInfo.file_context.extra_info.upload.trunk_info;
+		Globle.int2buff(Globle.g_server_id_in_filename, buff);
+		Globle.int2buff((int)timestamp, buff,4);//Notice
+		if ((file_size >> 32) != 0)
+		{
+			masked_file_size = file_size;
+		}
+		else
+		{
+			masked_file_size = Globle.COMBINE_RAND_FILE_SIZE(file_size);
+		}
+		Globle.long2buff(masked_file_size, buff,4*2);
+		Globle.int2buff(crc32, buff,4*4);
+
+		//base64_encode_ex(g_fdfs_base64_context, buff, 4 * 5, encoded,filename_len, false);
+		String encodeString = new sun.misc.BASE64Encoder().encode(buff);   
+		encoded = encodeString.getBytes();
+		
+
+		if (!clientInfo.file_context.extra_info.upload.if_sub_path_alloced)
+		{
+			short[] sub_paths = storage_get_store_path(encoded,filename_len);
+			short sub_path_high = sub_paths[0];
+			short sub_path_low = sub_paths[1];
+
+			pTrunkInfo.path.sub_path_high = sub_path_high;
+			pTrunkInfo.path.sub_path_low  = sub_path_low;
+
+			clientInfo.file_context.extra_info.upload. 
+					if_sub_path_alloced = true;
+		}
+
+		filename = String.format(FDFS_STORAGE_DATA_DIR_FORMAT + "/" +  
+				FDFS_STORAGE_DATA_DIR_FORMAT + "/", 
+				pTrunkInfo.path.sub_path_high, 
+				pTrunkInfo.path.sub_path_low);
+		/*memcpy(filename+len, encoded, filename_len);
+		memcpy(filename+len+(filename_len), szFormattedExt, ext_name_len);
+		*filename_len += len + ext_name_len;
+		*(filename + (*filename_len)) = '\0';*/
+
+		filename = new StringBuffer().append(filename)
+				.append(new String(encoded))
+				.append(new String(szFormattedExt)).toString();
+		
+		return 0;
+
+	}
+
+	private short[] storage_get_store_path(byte[] encoded, int filename_len)
+	{
+		short sub_path_high = 0, sub_path_low = 0;
+		int n;
+		int result;
+
+		if (Globle.g_file_distribute_path_mode == FDFS_FILE_DIST_PATH_ROUND_ROBIN)
+		{
+			sub_path_high = Globle.g_dist_path_index_high;
+			sub_path_low = Globle.g_dist_path_index_low;
+
+			if (++Globle.g_dist_write_file_count >= Globle.g_file_distribute_rotate_count)
+			{
+				Globle.g_dist_write_file_count = 0;
+		
+				synchronized (Globle.path_index_thread_lock) {
+					++Globle.g_dist_path_index_low;
+					if (Globle.g_dist_path_index_low >= Globle.g_subdir_count_per_path)
+					{  //rotate
+						Globle.g_dist_path_index_high++;
+						if (Globle.g_dist_path_index_high >= 
+								Globle.g_subdir_count_per_path)  //rotate
+						{
+							Globle.g_dist_path_index_high = 0;
+						}
+						Globle.g_dist_path_index_low = 0;
+					}
+
+					++Globle.g_stat_change_count;
+				}
+			}
+			
+			return new short[]{sub_path_high,sub_path_low};
+		}  
+		else
+		{//random
+			//TODO 
+			/*n = PJWHash(filename, filename_len) % (1 << 16);
+			*sub_path_high = ((n >> 8) & 0xFF) % g_subdir_count_per_path;
+			*sub_path_low = (n & 0xFF) % g_subdir_count_per_path;*/
+		}
+		return null;
+
 	}
 
 	private Object fdfs_storage_reserved_space_to_string_ex(byte flag,

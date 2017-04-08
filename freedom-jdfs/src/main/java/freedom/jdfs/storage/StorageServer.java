@@ -1,5 +1,7 @@
 package freedom.jdfs.storage;
 
+import static freedom.jdfs.protocol.ProtoCommon.FDFS_STORAGE_DATA_DIR_FORMAT;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -8,14 +10,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Properties;
 
-import com.google.common.io.Files;
-
 import freedom.jdfs.LogKit;
-import static freedom.jdfs.protocol.ProtoCommon.*;
 
 
 public class StorageServer {
@@ -39,7 +40,7 @@ public class StorageServer {
 	private static void storage_check_and_make_data_dirs(StorageConfig storageConfig,String basePath)
 			throws IOException {
 		File basePathDir = new File(basePath);
-		if(!existFile(basePathDir))
+		if(!Globle.existFile(basePathDir))
 		{
 			LogKit.error(String.format("base_path is not exist : %s", basePath), StorageServer.class);
 			throw new FileNotFoundException(String.format("base_path is not exist : %s", basePath));
@@ -53,7 +54,7 @@ public class StorageServer {
 		}else{
 			//data_init_flag not exist
 			File data = new File(data_path);
-			if(!existFile(data))
+			if(!Globle.existFile(data))
 			{
 				if(!data.mkdir())
 					throw new FileNotFoundException(String.format("data is not exist : %s", data.getAbsolutePath()));
@@ -62,11 +63,11 @@ public class StorageServer {
 				int  server_port       = storageConfig.getPort();
 				int  http_port         = storageConfig.getHttp_server_port();
 				try {
-					Files.write(String.format(
+					Files.write(Paths.get(data_init_flag.getAbsolutePath()), String.format(
 							"%s=%s\r\n%s=%s\r\n%s=%s\r\n", 
 							"storage_join_time",storage_join_time,
 							"last_server_port",server_port,
-							"last_http_port",http_port).getBytes(), data_init_flag);
+							"last_http_port",http_port).getBytes());
 				}
 				catch (IOException e)
 				{
@@ -113,7 +114,7 @@ public class StorageServer {
 		//检查存储目录00 - FF
 		String firstStorageDir = String.format(FDFS_STORAGE_DATA_DIR_FORMAT + "/" + FDFS_STORAGE_DATA_DIR_FORMAT, 0,0);
 		String lastStorageDir  = String.format(FDFS_STORAGE_DATA_DIR_FORMAT + "/" + FDFS_STORAGE_DATA_DIR_FORMAT, g_subdir_count_per_path - 1,g_subdir_count_per_path - 1);
-		if(!existFile(data_path,firstStorageDir) && !existFile(data_path,lastStorageDir))
+		if(!Globle.existFile(data_path,firstStorageDir) && !Globle.existFile(data_path,lastStorageDir))
 		{
 			for (int i = 0; i < g_subdir_count_per_path; i++) 
 			{
@@ -133,21 +134,6 @@ public class StorageServer {
 		return pathCreate;
 	}
 	
-	private static boolean existFile(String basePath, String lastStorageDir) 
-	{
-		return existFile(new File(basePath,lastStorageDir));
-	}
-
-	public static final boolean existFile(String path)
-	{
-		return existFile(new File(path));
-	}
-	
-	public static final boolean existFile(File file)
-	{
-		return file.exists();
-	}
-
 	private static StorageConfig loadConfig() throws FileNotFoundException, IOException, NoSuchFieldException, SecurityException, InstantiationException, IllegalAccessException, NoSuchMethodException, IllegalArgumentException, InvocationTargetException
 	{
 		Class<StorageConfig> clazz = StorageConfig.class;

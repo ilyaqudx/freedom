@@ -6,5 +6,6 @@ public class FDFSStorePaths {
 	/**
 	 * char**  char* -> byte[]  char** -> byte[][]
 	 * */
-	public byte[][] paths;
+	//public byte[][] paths;
+	public String[] paths;
 }

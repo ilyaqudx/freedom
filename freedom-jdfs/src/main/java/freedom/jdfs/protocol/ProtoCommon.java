@@ -30,6 +30,8 @@ public class ProtoCommon
 		}
 	}
 	
+	public static final String FDFS_STORAGE_DATA_DIR_FORMAT = "%02x";
+	
 	public static final int g_fdfs_network_timeout = 0x8000;
 	public static final int IOEVENT_TIMEOUT  =  0x8000;
 	public static final int MAX_PATH_SIZE = 256;

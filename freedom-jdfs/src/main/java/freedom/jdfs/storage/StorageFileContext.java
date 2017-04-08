@@ -1,5 +1,7 @@
 package freedom.jdfs.storage;
 
+import java.io.File;
+
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
 
@@ -27,6 +29,7 @@ public class StorageFileContext {
 	public int create_flag;    //create file flag
 	public int buff_offset;    //buffer offset after recv to write to file
 	public int fd;         //file description no
+	public File file;  //java中不能用文件描述符,直接保存为file
 	public long start;  //the start offset of file
 	public long end;    //the end offset of file
 	public long offset; //the current offset of file

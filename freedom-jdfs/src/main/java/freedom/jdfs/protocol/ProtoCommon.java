@@ -624,4 +624,8 @@ public class ProtoCommon
  public static final int  O_SYNC	    = 0x04010000;
  public static final int  O_FSYNC		= O_SYNC;
  public static final int  O_ASYNC		= 0x020000;
+
+ public static final int RAND_MAX = 0x7fff;
+
+public static final int CRC32_XINIT = 0xFFFFFFFF;
 }

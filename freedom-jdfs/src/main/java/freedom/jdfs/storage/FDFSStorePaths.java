@@ -7,5 +7,5 @@ public class FDFSStorePaths {
 	 * char**  char* -> byte[]  char** -> byte[][]
 	 * */
 	//public byte[][] paths;
-	public String[] paths;
+	public String[] paths = new String[3];
 }

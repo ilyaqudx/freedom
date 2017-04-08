@@ -27,6 +27,7 @@ public class StorageDioService {
 	public StorageDioService(StorageConfig storageConfig)
 	{
 		this.storageConfig = storageConfig;
+		this.start();
 	}
 	/**
 	 * 写任务队列
@@ -37,11 +38,11 @@ public class StorageDioService {
 	private StorageDioWriteTask writeTask;
 	private StorageDioReadTask readTask;
 	
-	private void init()
+	private void start()
 	{
 		//初始化任务队列
 		writeQueue = new ArrayBlockingQueue<StorageTask>(storageConfig.getMax_connections());
-		readQueue  = new ArrayBlockingQueue<>(storageConfig.getMax_connections());
+		readQueue  = new ArrayBlockingQueue<StorageTask>(storageConfig.getMax_connections());
 		
 		//创建线程去处理读写操作
 		readTask = new StorageDioReadTask("storage-dio-read-thread",readQueue);

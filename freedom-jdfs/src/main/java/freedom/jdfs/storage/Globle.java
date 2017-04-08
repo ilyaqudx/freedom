@@ -5,7 +5,7 @@ import java.util.Random;
 import static freedom.jdfs.protocol.ProtoCommon.*;
 public class Globle {
 
-	public static FDFSStorageStat g_storage_stat;
+	public static FDFSStorageStat g_storage_stat = new FDFSStorageStat();
 	
 	public static int g_file_distribute_path_mode = FDFS_FILE_DIST_PATH_ROUND_ROBIN;
 	public static int g_file_distribute_rotate_count = FDFS_FILE_DIST_DEFAULT_ROTATE_COUNT;
@@ -35,6 +35,8 @@ public class Globle {
 	}
 	
 	public static final Random random = new Random();
+
+	public static final byte SUCCESS = 0;
 	public static short g_subdir_count_per_path = 256;
 	public static int g_stat_change_count = 0;
 
@@ -101,6 +103,12 @@ public class Globle {
 			buff[offset++] = (byte)((value >>> (24 - i * 8)) & 0xff); 
 		}
 	}
+	public static final byte[] long2buff(long value)
+	{
+		byte[] buff = new byte[8];
+		long2buff(value, buff);
+		return buff;
+	}
 	public static final void long2buff(long value,byte[] buff)
 	{
 		for (int i = 0; i < 8; i++) 
@@ -114,6 +122,10 @@ public class Globle {
 		{
 			buff[offset++] = (byte)((value >>> (56 - i * 8)) & 0xff); 
 		}
+	}
+	
+	public static final int CRC32_FINAL(int crc) {
+		return crc ^ 0xFFFFFFFF;
 	}
 	
 	public static void main(String[] args) {

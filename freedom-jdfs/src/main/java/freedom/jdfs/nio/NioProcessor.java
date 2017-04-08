@@ -7,6 +7,7 @@ import java.nio.channels.Selector;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.apache.log4j.Logger;
 
@@ -22,7 +23,18 @@ public class NioProcessor {
 	public final String name;
 	private Selector sel;
 	private LinkedList<NioSession> newSessions = new LinkedList<NioSession>();
-
+	/**
+	 * 完成操作的任务队列
+	 * */
+	private ConcurrentLinkedQueue<StorageTask>
+		completeTaskQueue = new ConcurrentLinkedQueue<StorageTask>();
+	
+	public void complete(StorageTask storageTask)
+	{
+		if(null != storageTask)
+			completeTaskQueue.add(storageTask);
+	}
+	
 	public NioProcessor(int id)
 	{
 		this.id = id;
@@ -136,7 +148,7 @@ public class NioProcessor {
 				return;
 			}
 			
-			//TODO
+			//TODO Notice
 			/*fast_timer_modify(&pTask->thread_data->timer,
 					&pTask->event.timer, g_current_time +
 					g_fdfs_network_timeout);*/
@@ -149,7 +161,7 @@ public class NioProcessor {
 					{
 						//only read recv_bytes
 						ByteBuffer buffer = storageTask.buffer;
-						buffer.limit(buffer.position() + recv_bytes);
+						buffer.limit(storageTask.buffer.position() + recv_bytes);
 						int len = session.getChannel().read(storageTask.buffer);
 						if(clientInfo.total_length == 0){
 							//no enough header
@@ -169,6 +181,7 @@ public class NioProcessor {
 						}
 						
 						storageTask.offset += len;
+						storageTask.buffer.position(storageTask.offset);
 						if(storageTask.offset >= storageTask.length){//read done this turn
 							if (clientInfo.total_offset + storageTask.length >= 
 									clientInfo.total_length)
@@ -198,6 +211,24 @@ public class NioProcessor {
 					catch (IOException e) 
 					{
 						e.printStackTrace();
+						try {
+							session.getChannel().close();
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						break;
+					}
+					catch (Exception e) 
+					{
+						e.printStackTrace();
+						try {
+							session.getChannel().close();
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						break;
 					}
 			}
 		}

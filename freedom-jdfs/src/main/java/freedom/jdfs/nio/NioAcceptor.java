@@ -120,7 +120,14 @@ public class NioAcceptor {
 		NioSession session = newSession(channel);
 		NioProcessor processor = getProcessor(session);
 		processor.addNewSession(session);
-		session.task = StorageTaskPool.obtain();
+		bindStorageTask(session);
 		return session;
+	}
+
+	private void bindStorageTask(NioSession session) throws IOException
+	{
+		session.task = StorageTaskPool.I.obtain();
+		session.task.client_ip = ((InetSocketAddress)session.getChannel().getRemoteAddress())
+				.getHostName();
 	}
 }

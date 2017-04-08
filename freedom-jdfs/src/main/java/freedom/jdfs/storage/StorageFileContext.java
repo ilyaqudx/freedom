@@ -1,6 +1,7 @@
 package freedom.jdfs.storage;
 
 import java.io.File;
+import java.io.RandomAccessFile;
 
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
@@ -21,7 +22,7 @@ public class StorageFileContext {
 	public int crc32;   //file content crc32 signature
 	public MD5_CTX md5_context;
 
-	public ExtraInfoUnion extra_info;
+	public ExtraInfoUnion extra_info = new ExtraInfoUnion();
 
 	public int dio_thread_index;		//dio thread index
 	public long timestamp2log;		//timestamp to log
@@ -29,7 +30,7 @@ public class StorageFileContext {
 	public int create_flag;    //create file flag
 	public int buff_offset;    //buffer offset after recv to write to file
 	public int fd;         //file description no
-	public File file;  //java中不能用文件描述符,直接保存为file
+	public RandomAccessFile file;  //java中不能用文件描述符,直接保存为file
 	public long start;  //the start offset of file
 	public long end;    //the end offset of file
 	public long offset; //the current offset of file
@@ -39,8 +40,8 @@ public class StorageFileContext {
 	public long tv_deal_start; //task deal start tv for access log
 	
 	public class ExtraInfoUnion{
-		public StorageUploadInfo upload;//c 中的union  中的元素  extra_info
-		public StorageSetMetaInfo setmeta;//c 中的union  中的元素  extra_info
+		public StorageUploadInfo upload = new StorageUploadInfo();//c 中的union  中的元素  extra_info
+		public StorageSetMetaInfo setmeta = new StorageSetMetaInfo();//c 中的union  中的元素  extra_info
 	}
 	
 	public class StorageUploadInfo{
@@ -53,7 +54,7 @@ public class StorageFileContext {
 		public byte[] prefix_name = new byte[ProtoCommon.FDFS_FILE_PREFIX_MAX_LEN + 1];
 		public byte[] group_name = new byte[ProtoCommon.FDFS_GROUP_NAME_MAX_LEN + 1];  	//the upload group name
 		public long start_time;		//upload start timestamp
-		public FDFSTrunkFullInfo trunk_info;
+		public FDFSTrunkFullInfo trunk_info = new FDFSTrunkFullInfo();
 		public FileBeforeOpenCallback before_open_callback;
 		public FileBeforeCloseCallback before_close_callback;
 	}

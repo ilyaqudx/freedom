@@ -1,8 +1,12 @@
 package freedom.jdfs.command;
 
+import static freedom.jdfs.protocol.ProtoCommon.CRC32_XINIT;
 import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_DIST_PATH_ROUND_ROBIN;
 import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN;
 import static freedom.jdfs.protocol.ProtoCommon.FDFS_STORAGE_DATA_DIR_FORMAT;
+
+import java.util.Arrays;
+
 import freedom.jdfs.LogKit;
 import freedom.jdfs.nio.NioSession;
 import freedom.jdfs.protocol.ProtoCommon;
@@ -11,11 +15,15 @@ import freedom.jdfs.storage.FileDealDoneCallback;
 import freedom.jdfs.storage.Globle;
 import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
+import freedom.jdfs.storage.StorageServer;
 import freedom.jdfs.storage.StorageTask;
 import freedom.jdfs.storage.TaskDealFunc;
 import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
 
 public class UploadFileCommand implements Command {
+
+	private static final int STORAGE_STATUE_DEAL_FILE = 123456;
+
 
 	@Override
 	public int execute(NioSession session, StorageTask storageTask) 
@@ -49,6 +57,7 @@ public class UploadFileCommand implements Command {
 			return ProtoCommon.EINVAL;
 		}
 
+		storageTask.buffer.position(10);
 		//头部后第一个字节:存储路径索引
 		store_path_index = storageTask.buffer.get();
 
@@ -74,7 +83,7 @@ public class UploadFileCommand implements Command {
 			LogKit.error(String.format("pkg length is not correct,invalid file bytes: %ld, total body length: %ld",file_bytes, packetLen),this.getClass());
 			return ProtoCommon.EINVAL;
 		}
-		storageTask.buffer.get(file_ext_name,storageTask.buffer.position(),6);
+		storageTask.buffer.get(file_ext_name,0,6);
 		//将第7字节设置为'\0' end
 		file_ext_name[ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN] = '\0';
 		//validate file name
@@ -137,7 +146,9 @@ public class UploadFileCommand implements Command {
 		{
 			byte[] reserved_space_str = new byte[32];
 			//TODO disk space alloc logic
-			if (!storage_check_reserved_space_path(Globle.g_path_space_list 
+			/*
+			 * TODO Continue
+			 * if (!storage_check_reserved_space_path(Globle.g_path_space_list 
 				[store_path_index].total_mb, Globle.g_path_space_list 
 				[store_path_index].free_mb - (file_bytes/Globle.FDFS_ONE_MB), 
 				Globle.g_avg_storage_reserved_mb))
@@ -150,21 +161,18 @@ public class UploadFileCommand implements Command {
 										  total_mb, Globle.g_storage_reserved_space.rs.ratio,
 										  reserved_space_str)), this.getClass());
 				return ProtoCommon.ENOSPC;
-			}
+			}*/
 
 			crc32 = Globle.rand();
 			filename[0] = '\0';
 			filename_len = 0;
 			fileContext.extra_info.upload.if_sub_path_alloced = false;
 			//generate store file name
-			if ((result=storage_get_filename(clientInfo, 
-				fileContext.extra_info.upload.start_time, 
-				file_bytes, crc32, fileContext.extra_info.upload.
-				formatted_ext_name, new String(filename), filename_len, //TODO storage file name length
-				fileContext.filename)) != 0)
-			{
-				return result;
-			}
+			fileContext.filename = storage_get_filename(clientInfo, 
+					fileContext.extra_info.upload.start_time, 
+					file_bytes, crc32, fileContext.extra_info.upload.
+					formatted_ext_name, new String(filename), filename_len, //TODO storage file name length
+					fileContext.filename).getBytes();
 
 			//set clean callback
 			clean_func = dio_write_finish_clean_up(storageTask);
@@ -184,12 +192,51 @@ public class UploadFileCommand implements Command {
 	}
 
 	private int storage_write_to_file(StorageTask storageTask,
-			long file_offset, long file_bytes, int bufferOffset,
+			long file_offset, long upload_bytes, int buff_offset,
 			TaskDealFunc dio_write_file,
 			FileDealDoneCallback storage_upload_file_done_callback,
 			DisconnectCleanFunc clean_func, int store_path_index)
 	{
-		return 0;
+		int result;
+		StorageClientInfo clientInfo = storageTask.clientInfo;
+		StorageFileContext fileContext =  clientInfo.file_context;
+
+		clientInfo.deal_func = dio_write_file;
+		clientInfo.clean_func = clean_func;
+
+		fileContext.fd = -1;
+		fileContext.buff_offset = buff_offset;
+		fileContext.offset = file_offset;
+		fileContext.start = file_offset;
+		fileContext.end = file_offset + upload_bytes;
+		//get dio thread TODO Continue 现在只写死一个线程
+		//fileContext.dio_thread_index = storage_dio_get_thread_index(storageTask, store_path_index, fileContext.op);
+		fileContext.done_callback = storage_upload_file_done_callback;
+
+		if (fileContext.calc_crc32)
+		{
+			fileContext.crc32 = CRC32_XINIT;
+		}
+
+		/*
+		 * TODO Continue
+		 * if (fileContext.calc_file_hash)
+		{
+			if (g_file_signature_method == STORAGE_FILE_SIGNATURE_METHOD_HASH)
+			{
+				INIT_HASH_CODES4(fileContext.file_hash_codes)
+			}
+			else
+			{
+				my_md5_init(&fileContext.md5_context);
+			}
+		}*/
+
+		//put task to dio_queue
+		StorageServer.context.storageDioService.addWriteTask(storageTask);
+		
+		
+		return STORAGE_STATUE_DEAL_FILE;
 	}
 
 	private TaskDealFunc dio_write_file() {
@@ -234,7 +281,7 @@ public class UploadFileCommand implements Command {
 	/**
 	 * Notice
 	 * */
-	private int storage_get_filename(StorageClientInfo clientInfo,
+	private String storage_get_filename(StorageClientInfo clientInfo,
 			long start_time, long file_size, int crc32,
 			byte[] szFormattedExt, String filename, int filename_len,
 			byte[] full_filename) 
@@ -242,28 +289,26 @@ public class UploadFileCommand implements Command {
 		int i;
 		int result;
 		int store_path_index; 
-		String fullFileName;
+		String fullFileName = null;
 		store_path_index = clientInfo.file_context.extra_info.upload.trunk_info.path.store_path_index;
-		for (i=0; i<10; i++)
+		for (i=0; i< 10; i++)
 		{
-			if ((result=storage_gen_filename(clientInfo, file_size, 
+			filename =storage_gen_filename(clientInfo, file_size, 
 				crc32, szFormattedExt, FDFS_FILE_EXT_NAME_MAX_LEN+1, 
-				start_time, filename, filename_len)) != 0)
-			{
-				return result;
-			}
+				start_time, filename, filename_len);
+			
 			fullFileName = String.format("%s/data/%s", Globle.g_fdfs_store_paths.paths[store_path_index], filename);
 			if (!Globle.existFile(fullFileName))
 			{
 				break;
 			}
 		}
-		return 0;
+		return fullFileName;
 
 	}
 
 	@SuppressWarnings("restriction")
-	private int storage_gen_filename(StorageClientInfo clientInfo,
+	private String storage_gen_filename(StorageClientInfo clientInfo,
 			long file_size, int crc32, byte[] szFormattedExt, int ext_name_len,
 			long timestamp, String filename, int filename_len)
 	{
@@ -315,9 +360,9 @@ public class UploadFileCommand implements Command {
 
 		filename = new StringBuffer().append(filename)
 				.append(new String(encoded))
-				.append(new String(szFormattedExt)).toString();
+				.append(new String(szFormattedExt,0,szFormattedExt.length-1)).toString();
 		
-		return 0;
+		return filename;
 
 	}
 
@@ -380,9 +425,51 @@ public class UploadFileCommand implements Command {
 	}
 
 	private void storage_format_ext_name(byte[] file_ext_name,
-			byte[] formatted_ext_name) {
-		// TODO Auto-generated method stub
+			byte[] szFormattedExt) 
+	{
+		int i;
+		int ext_name_len;
+		int pad_len;
+		byte[] p = new byte[FDFS_FILE_EXT_NAME_MAX_LEN + 1];
+
+		int firstZero = -1;
+		for (int j = 0; j < file_ext_name.length; j++) {
+			if(file_ext_name[j] == 0)
+			{
+				firstZero = j;
+				break;
+			}
+		}
 		
+		ext_name_len = firstZero; 
+		if (ext_name_len == 0)
+		{
+			pad_len = FDFS_FILE_EXT_NAME_MAX_LEN + 1;
+		}
+		else
+		{
+			pad_len = FDFS_FILE_EXT_NAME_MAX_LEN - ext_name_len;
+		}
+
+		p = szFormattedExt;
+		for (i=0; i< pad_len; i++)
+		{
+			/*
+			 * TODO Continue
+			 * byte a = (byte) ('0' + (int)(10.0 * (double)Globle.rand() / ProtoCommon.RAND_MAX));
+			System.out.println("random padding ext name : " + a);
+			p[i] = (byte) Math.abs(a);*/
+			p[i] = 65;
+		}
+
+		if (ext_name_len > 0){
+			p[i++] = '.';
+			//memcpy(p, file_ext_name, ext_name_len);
+			System.arraycopy(file_ext_name, 0, p, i, ext_name_len);
+			//p += ext_name_len;
+			i += ext_name_len;
+		}
+		p[i++] = '\0';
 	}
 
 	private int fdfs_validate_filename(byte[] file_ext_name) {
@@ -397,6 +484,8 @@ public class UploadFileCommand implements Command {
 	
 	
 	public static void main(String[] args) {
+		String a = "\0\0\0";
+		System.out.println(Arrays.toString(a.getBytes()));
 		System.out.println(Globle.now());
 	}
 }

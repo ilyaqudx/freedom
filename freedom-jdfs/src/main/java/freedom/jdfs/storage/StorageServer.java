@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -17,24 +18,27 @@ import java.util.Map.Entry;
 import java.util.Properties;
 
 import freedom.jdfs.LogKit;
+import freedom.jdfs.nio.NioAcceptor;
+import freedom.jdfs.storage.dio.StorageDioService;
 
 
 public class StorageServer {
 
-	public static final char[] DIR_0X_CHAR = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-	
+	public static StorageServer context;
+	public StorageDioService storageDioService;
 	public static void main(String[] args) throws Exception
 	{
+		context = new StorageServer();
 		//load config
 		StorageConfig storageConfig = loadConfig();
+		//启动磁盘服务
+		context.storageDioService = new StorageDioService(storageConfig);
+		//启动网络监听
+		new NioAcceptor(new InetSocketAddress(storageConfig.getPort())).start();
 		//storage根目录 
 		String basePath = storageConfig.getBase_path();
 		//检查data目录是否存在,如果不存在则创建storage path
 		storage_check_and_make_data_dirs(storageConfig,basePath);
-		
-		
-		
-		StorageTaskPool storageTaskPool = new StorageTaskPool();
 	}
 
 	private static void storage_check_and_make_data_dirs(StorageConfig storageConfig,String basePath)
@@ -50,7 +54,7 @@ public class StorageServer {
 		String data_path = String.format("%s/%s", basePath,"data");
 		File data_init_flag = new File(String.format("%s/%s", data_path,".data_init_flag"));
 		if(data_init_flag.exists()){
-			
+			LogKit.info(String.format("data_init_flag is exist"), StorageServer.class);
 		}else{
 			//data_init_flag not exist
 			File data = new File(data_path);
@@ -152,6 +156,9 @@ public class StorageServer {
 			Method method = clazz.getMethod("set" + firstUpper(field.getName()), field.getType());
 			method.invoke(storageConfig, getJavaType(field.getType(),e.getValue()));
 		}
+		
+		Globle.g_fdfs_store_paths.count = storageConfig.getStore_path_count();
+		Globle.g_fdfs_store_paths.paths[0]    = storageConfig.getStore_path0();
 		
 		System.out.println(storageConfig);
 		return storageConfig;

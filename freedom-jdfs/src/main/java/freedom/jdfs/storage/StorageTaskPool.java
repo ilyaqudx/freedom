@@ -8,6 +8,11 @@ import freedom.jdfs.LogKit;
 
 public class StorageTaskPool {
 
+	public static final StorageTaskPool I = new StorageTaskPool();
+	
+	private StorageTaskPool(){
+		
+	}
 	
 	/**
 	 * max task count
@@ -21,10 +26,6 @@ public class StorageTaskPool {
 	private int min_buffer_size = 256 * 1024;
 	private int max_buffer_size = 256 * 1024;
 	private int allocCount = 0;
-	public StorageTaskPool()
-	{
-		
-	}
 	/**
 	 * task queue
 	 * */
@@ -38,14 +39,15 @@ public class StorageTaskPool {
 				return;
 			if(allocCount >= MAX_TASK_COUNT){
 				LogKit.warn(String.format("storage task alloc fail,current active task is full : %d", MAX_TASK_COUNT),this.getClass());
-				for (int i = 0; i < ALLOC_COUNT_ONCE; i++) 
-				{
-					allocCount++;
-					StorageTask task = new StorageTask();
-					task.size = max_buffer_size;
-					task.buffer = ByteBuffer.allocate(max_buffer_size);
-					queue.add(task);
-				}
+				return;
+			}
+			for (int i = 0; i < ALLOC_COUNT_ONCE; i++) 
+			{
+				allocCount++;
+				StorageTask task = new StorageTask();
+				task.size = max_buffer_size;
+				task.buffer = ByteBuffer.allocate(max_buffer_size);
+				queue.add(task);
 			}
 		}
 	}

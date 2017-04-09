@@ -170,9 +170,17 @@ public class NioProcessor {
 						}
 						//only read recv_bytes
 						ByteBuffer buffer = storageTask.buffer;
+						//System.out.println("buffer before recv : " + buffer);
 						buffer.limit(storageTask.buffer.position() + recv_bytes);
-						int len = session.getChannel().read(storageTask.buffer);
 						
+						int len = session.getChannel().read(storageTask.buffer);
+						if(len == 0){
+							System.out.println("读事件中读取到了数据为0的情况,缓冲区确实没有数据了.跳出循环,下一轮再来读取" + buffer);
+							//这儿读到0的情况是因为一起在死循环中,如果没有读取到完整的BUFFER的大小的数据则会一直读,但是这时候可能缓冲区确实没有数据,所以返回了0
+							//的情况.此时应该跳出循环,让后面的CHANNEL继续执行.而不是一直让一个CHANNEL读完再处理.浪费CPU.而且如果一个CHANNEL因为长时间不来
+							//数据,则会造成其他所有的处理都不能处理.这是代码写的有问题
+							break;
+						}
 						if(clientInfo.total_length == 0){
 							//no enough header
 							if(len < recv_bytes){
@@ -192,8 +200,8 @@ public class NioProcessor {
 						
 						storageTask.offset += len;
 						storageTask.buffer.position(storageTask.offset);
-						System.out.println(String.format("本次接收数据的长度 : %d , 累计接收数据长度 : %d,"
-								+ "还剩余数据 : %d", len,buffer.position(),storageTask.length - storageTask.offset));
+						System.out.println(String.format("【Channel %d】本次实际接收数据的长度 : %d ,本次期望接收数据长度 : %d ,累计接收数据长度 : %d,"
+								+ "还剩余数据 : %d", session.id,len,recv_bytes,buffer.position(),storageTask.length - storageTask.offset));
 						if(storageTask.offset >= storageTask.length){//read done this turn
 							if (clientInfo.total_offset + storageTask.length >= 
 									clientInfo.total_length)

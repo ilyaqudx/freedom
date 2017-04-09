@@ -2,6 +2,8 @@ package freedom.jdfs.storage;
 
 import java.nio.ByteBuffer;
 
+import freedom.jdfs.nio.NioSession;
+
 /**
  * storage任务
  * */
@@ -24,10 +26,9 @@ public class StorageTask {
 	public int   length;//data length
 	public int   offset;//current offset
 	public long  req_count;//请求数量,暂时不知道干什么
-	public int   stage;
 	public StorageClientInfo clientInfo = new StorageClientInfo();//client request info
-	public StorageFileContext fileContext = new StorageFileContext();//upload file context
 	StorageTask next;
+	public NioSession session;
 	
 	
 	

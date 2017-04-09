@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import freedom.jdfs.handler.CommandRouter;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.StorageClientInfo;
+import freedom.jdfs.storage.StorageServer;
 import freedom.jdfs.storage.StorageTask;
 
 public class NioProcessor {
@@ -31,8 +32,11 @@ public class NioProcessor {
 	
 	public void complete(StorageTask storageTask)
 	{
-		if(null != storageTask)
+		if(null != storageTask){
 			completeTaskQueue.add(storageTask);
+			//立即唤醒NIO线程进行处理,否则必须要等到超时才会去处理
+			sel.wakeup();
+		}
 	}
 	
 	public NioProcessor(int id)
@@ -83,10 +87,23 @@ public class NioProcessor {
 					handleNewSession();
 					//process I/O event
 					process(sel.selectedKeys());
+					//handle dio done back
+					handleDioCallback();
 				} 
 				catch (IOException e) 
 				{
 					e.printStackTrace();
+				}
+			}
+		}
+
+		private void handleDioCallback() 
+		{
+			if(!completeTaskQueue.isEmpty()){
+				StorageTask storageTask = null;
+				while((storageTask = completeTaskQueue.poll()) != null){
+					storageTask.session.setIntestedRead(true);
+					System.out.println("【session : " +storageTask.session.id+ "】 重新注册读事件");
 				}
 			}
 		}
@@ -96,14 +113,14 @@ public class NioProcessor {
 			for (Iterator<SelectionKey> it = selectedKeys.iterator();it.hasNext();) 
 			{
 				SelectionKey key = it.next();
+				it.remove();
 				if (key.isReadable())
 				{
 					storage_recv_notify_read(key);
-					//此处读事件,不能按照常规直接就删除
 				}
-				else if(key.isWritable())
+				else if(key.isWritable()){
 					write(key);
-				it.remove();
+				}
 			}
 		}
 
@@ -117,21 +134,21 @@ public class NioProcessor {
 			NioSession session = ((NioSession) key.attachment());
 			StorageTask storageTask      = session.task;
 			StorageClientInfo clientInfo = session.task.clientInfo;
-			if ((storageTask.stage & StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD) > 0)
+			if ((clientInfo.stage & StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD) > 0)
 			{
-				storageTask.stage &= ~StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
+				clientInfo.stage &= ~StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
 			}
-			switch(storageTask.stage)
+			switch(clientInfo.stage)
 			{
 				case StorageTask.FDFS_STORAGE_STAGE_NIO_INIT:
 					//init(session.task);
 					break;
 				case StorageTask.FDFS_STORAGE_STAGE_NIO_RECV:
-					storageTask.offset = 0;
+					//TODO Notice storageTask.offset = 0;  之后 再看为什么要重设为0
 					int remain_bytes = (int)(clientInfo.total_length - clientInfo.total_offset);
 					storageTask.length = remain_bytes > storageTask.size ? storageTask.size : remain_bytes;
 					if(set_recv_event(storageTask)){
-						client_sock_read(session,storageTask);
+						client_sock_read(key,session,storageTask);
 					}
 					break;
 			}
@@ -143,7 +160,7 @@ public class NioProcessor {
 		 * 数据读完了,也删除了当前的读事件.为什么还有读事件不停的来.查看一下是否读取的数据为0,读完后,
 		 * 自己的BYTEBUFFER没有可读的空间 pos = limit
 		 * **/
-		private void client_sock_read(NioSession session,StorageTask storageTask)
+		private void client_sock_read(SelectionKey key,NioSession session,StorageTask storageTask)
 		{
 			StorageClientInfo clientInfo = storageTask.clientInfo;
 			if (clientInfo.canceled)
@@ -170,12 +187,12 @@ public class NioProcessor {
 						}
 						//only read recv_bytes
 						ByteBuffer buffer = storageTask.buffer;
-						//System.out.println("buffer before recv : " + buffer);
+						System.out.println("【Channel " +session.id+ "】buffer before recv : " + buffer + ",recv_bytes : " + recv_bytes);
 						buffer.limit(storageTask.buffer.position() + recv_bytes);
 						
 						int len = session.getChannel().read(storageTask.buffer);
 						if(len == 0){
-							System.out.println("读事件中读取到了数据为0的情况,缓冲区确实没有数据了.跳出循环,下一轮再来读取" + buffer);
+							System.out.println("【Channel " +session.id+ "】读事件中读取到了数据为0的情况,缓冲区确实没有数据了.跳出循环,下一轮再来读取" + buffer);
 							//这儿读到0的情况是因为一起在死循环中,如果没有读取到完整的BUFFER的大小的数据则会一直读,但是这时候可能缓冲区确实没有数据,所以返回了0
 							//的情况.此时应该跳出循环,让后面的CHANNEL继续执行.而不是一直让一个CHANNEL读完再处理.浪费CPU.而且如果一个CHANNEL因为长时间不来
 							//数据,则会造成其他所有的处理都不能处理.这是代码写的有问题
@@ -203,11 +220,13 @@ public class NioProcessor {
 						System.out.println(String.format("【Channel %d】本次实际接收数据的长度 : %d ,本次期望接收数据长度 : %d ,累计接收数据长度 : %d,"
 								+ "还剩余数据 : %d", session.id,len,recv_bytes,buffer.position(),storageTask.length - storageTask.offset));
 						if(storageTask.offset >= storageTask.length){//read done this turn
+							
+							session.setIntestedRead(false);
 							if (clientInfo.total_offset + storageTask.length >= 
 									clientInfo.total_length)
 							{
 								/* current req recv done */
-								clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_SEND;
+								//clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_SEND;
 								storageTask.req_count++;
 							}
 
@@ -253,10 +272,11 @@ public class NioProcessor {
 			}
 		}
 
-		private void storage_dio_queue_push(NioSession session,
+		public void storage_dio_queue_push(NioSession session,
 				StorageTask storageTask) 
 		{
-			
+			storageTask.clientInfo.stage |= StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
+			StorageServer.context.storageDioService.addWriteTask(storageTask);
 		}
 
 		private void storage_deal_task(NioSession session,StorageTask storageTask) 

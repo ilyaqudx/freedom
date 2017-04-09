@@ -29,7 +29,7 @@ public class UploadFileCommand implements Command {
 	public int execute(NioSession session, StorageTask storageTask) 
 	{
 		StorageClientInfo clientInfo = storageTask.clientInfo;
-		StorageFileContext fileContext = storageTask.fileContext;
+		StorageFileContext fileContext = clientInfo.file_context;
 		DisconnectCleanFunc clean_func;
 		//int offset = (int) clientInfo.total_offset;
 		byte[] filename = new byte[128];
@@ -41,9 +41,6 @@ public class UploadFileCommand implements Command {
 		int store_path_index;
 		int result;
 		int filename_len;
-		//请求的数据信息
-		clientInfo = storageTask.clientInfo;
-		fileContext =  storageTask.fileContext;
 		//包体长度
 		packetLen = clientInfo.total_length - ProtoCommon.HEADER_LENGTH;
 
@@ -232,7 +229,9 @@ public class UploadFileCommand implements Command {
 			}
 		}*/
 
-		//put task to dio_queue
+		//put task to dio_queue  提取到NioProcessor storage_dio_queue_push方法
+		//让当前CHANNEL取消读
+		storageTask.clientInfo.stage |= StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
 		StorageServer.context.storageDioService.addWriteTask(storageTask);
 		
 		

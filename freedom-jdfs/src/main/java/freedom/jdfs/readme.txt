@@ -35,3 +35,20 @@ question:
 			return 0;
 		}
 	storage服务器配置参数解析及初始化 参考: storage_func_init
+	
+	
+	上传文件过程中,StorageTask/StorageClientInfo/StorageFileContext中的offset和bytes的意义
+	
+	StorageTask
+		length : 一个请求数据可能会大于256K,会被分为多次处理。length代表一次的数据量
+		offset : 一次数据的偏移量(主要是在从内核COPY数据到BUFFER中使用,因为这一次的数据也不一定只读一次就完成了)
+		size   : 一次最大的数据量，默认为256K
+	StorageClientInfo:
+		total_length: 整个请求的总长度 : Header(10) + Body[store_path_index:1,file_length:8,ext_file_name:6] + 文件所有字节长度
+		total_offset: 整个请求的偏移量
+	StorageFileContext:
+		buff_offset: 当次写入磁盘StorageTask buffer的偏移量(首次写入磁盘时，buffer中是包含有Header和body其他数据的,所以需要从BUFF的偏移量开始)
+		start : 整个文件的开始字节
+		end   : 整个文件的结束字节
+		offset: 整个文件的偏移量(在写入时进行seek的偏移量)
+	

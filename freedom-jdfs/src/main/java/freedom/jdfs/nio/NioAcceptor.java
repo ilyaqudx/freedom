@@ -129,5 +129,6 @@ public class NioAcceptor {
 		session.task = StorageTaskPool.I.obtain();
 		session.task.client_ip = ((InetSocketAddress)session.getChannel().getRemoteAddress())
 				.getHostName();
+		session.task.session = session;
 	}
 }

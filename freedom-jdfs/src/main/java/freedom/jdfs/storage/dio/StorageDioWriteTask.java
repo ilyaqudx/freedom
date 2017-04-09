@@ -1,6 +1,5 @@
 package freedom.jdfs.storage.dio;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.concurrent.BlockingQueue;
@@ -34,25 +33,28 @@ public class StorageDioWriteTask extends Thread{
 				try {
 					StorageClientInfo clientInfo = storageTask.clientInfo;
 					//获得文件上下文信息
-					final StorageFileContext fileContext = storageTask.fileContext;
+					final StorageFileContext fileContext = clientInfo.file_context;
 					//打开文件
 					dio_open_file(fileContext);
 					//写入数据到磁盘
 					fileContext.file.write(storageTask.buffer.array(), fileContext.buff_offset, 
 							storageTask.length - fileContext.buff_offset);
-					synchronized (lock) {
-						Globle.g_storage_stat.total_file_write_count++;
-						Globle.g_storage_stat.success_file_write_count++;
-					}
-					
+					//本次数据全部写入后,记录整个OFFSET的位置
+					//storageTask.clientInfo.total_offset += storageTask.length;
+					//当次offset,length重置
 					//计算CRC32值
 					if (fileContext.calc_crc32)
 					{
 						CRC32 crc = new CRC32();
 						crc.update(storageTask.buffer.array(), fileContext.buff_offset, 
-							storageTask.length - fileContext.buff_offset);
+								storageTask.length - fileContext.buff_offset);
 						fileContext.crc32 = (int) crc.getValue();
 					}
+					synchronized (lock) {
+						Globle.g_storage_stat.total_file_write_count++;
+						Globle.g_storage_stat.success_file_write_count++;
+					}
+					
 					
 					//TODO Continue
 					/*if (fileContext.calc_file_hash)
@@ -68,10 +70,13 @@ public class StorageDioWriteTask extends Thread{
 								(unsigned char *)pDataBuff, write_bytes);
 						}
 					}*/
-					
+					//记录整个文件的写入偏移量
 					fileContext.offset += storageTask.length - fileContext.buff_offset;
 					if (fileContext.offset < fileContext.end)
 					{
+						storageTask.offset = 0;
+						storageTask.length = 0;
+						storageTask.buffer.clear();
 						fileContext.buff_offset = 0;
 						storage_nio_notify(storageTask);  //notify nio to deal
 					}
@@ -143,7 +148,7 @@ public class StorageDioWriteTask extends Thread{
 	 * */
 	private void storage_nio_notify(StorageTask storageTask)
 	{
-		storageTask.clientInfo.session.getProcessor().complete(storageTask);
+		storageTask.session.getProcessor().complete(storageTask);
 	}
 
 	/**
@@ -151,10 +156,10 @@ public class StorageDioWriteTask extends Thread{
 	 * */
 	private int dio_open_file(StorageFileContext fileContext) throws IOException{
 
-		int result = 0;
-
 		if (fileContext.file != null)
 		{
+			//写入偏移量
+			fileContext.file.seek(fileContext.offset);
 			return 0;
 		}
 		//如何确定文件的路径,或者说在哪儿确定文件保存的位置.在生成文件名时就已经确定了存储的路径 storage_path
@@ -163,22 +168,17 @@ public class StorageDioWriteTask extends Thread{
 		String fileName = new String(fileContext.filename);
 		System.out.println("write file name : " + fileName);
 		RandomAccessFile randomFile = new RandomAccessFile(fileName, "rw");
+		//设置文件的大小
+		randomFile.setLength(fileContext.end);
 		//File file = new File(new String(fileContext.filename));
 
 		//Notice 读和写都锁嘛?
 		synchronized (lock) {
 			
 			Globle.g_storage_stat.total_file_open_count++;
-			if (result == 0)
-			{
-				Globle.g_storage_stat.success_file_open_count++;
-			}
+			Globle.g_storage_stat.success_file_open_count++;
 		}
 
-		if (result != 0)
-		{
-			return result;
-		}
 
 		fileContext.file = randomFile;
 		if(fileContext.offset > 0){

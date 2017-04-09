@@ -1,13 +1,11 @@
 package freedom.jdfs;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.nio.file.Files;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Paths;
-
-import freedom.jdfs.storage.Globle;
 
 /**
  * 直接上传文件到Stroage,不通过Tracker查询
@@ -17,7 +15,7 @@ public class TestStorageUploadFileWithoutTracker {
 	
 	public static void main(String[] args) throws Exception 
 	{
-		for (int i = 0; i <256; i++) {
+		for (int i = 0; i <10; i++) {
 			new Thread(new Runnable() {
 				public void run() {
 					try {
@@ -33,26 +31,48 @@ public class TestStorageUploadFileWithoutTracker {
 	
 	private static final void concurrentTest() throws IOException
 	{
-		Socket socket = new Socket();
-		socket.connect(new InetSocketAddress("localhost", 23000));
 		
-		byte[] data = Files.readAllBytes(Paths.get("D:/迅雷下载/filedir/azy-tool-0.0.1.jar"));
+		SocketChannel channel = SocketChannel.open();
+		boolean connected = channel.connect(new InetSocketAddress("localhost", 23000));
 		
-		byte[] dataLenBuff = Globle.long2buff(data.length);
-		
-		OutputStream out = socket.getOutputStream();//135,556
-		//header
-		out.write(Globle.long2buff(1 + 8 + 6 + data.length));
-		out.write(1);
-		out.write(11);
+		FileChannel fileChannel = FileChannel.open(Paths.get("1.rmvb"));
+		int fileLength = (int) fileChannel.size();
+		ByteBuffer buffer = ByteBuffer.allocate(2 * 1024 * 1024);
+		buffer.putLong(1 + 8 + 6 + fileLength);
+		buffer.put((byte) 1);
+		buffer.put((byte) 11);
 		
 		//data
-		out.write(0);//store_path_index
-		out.write(dataLenBuff);//文件长度
-		out.write("sql\0\0\0".getBytes());//扩展名  6字节
-		out.write(data);//文件数据
-		out.flush();
+		buffer.put((byte) 0);//store_path_index
+		buffer.putLong(fileLength);//文件长度
+		buffer.put("zip\0\0\0".getBytes());//扩展名  6字节
 		
-		socket.getInputStream().read();
+		long start = System.currentTimeMillis();
+		int offset = 0;
+		int end    = 10 + 1 + 8 + 6 + fileLength;
+		
+		while(offset < end)
+		{
+			//先检查需要读多少数据
+			fileChannel.read(buffer);
+			buffer.flip();
+			int len = channel.write(buffer);
+			offset += len;
+			System.out.println(String.format("【本次写出数据  : %d , 累计写出数据  : %d】",len,offset));
+			if(buffer.hasRemaining()){
+				buffer.compact();
+			}else
+				buffer.clear();//重新读
+		}
+		long endTime = System.currentTimeMillis();
+		System.out.println("上传文件成功 ,总共耗时 : " + (endTime - start) + "ms");
+		try {
+			synchronized (Thread.currentThread()) {
+				Thread.currentThread().wait();
+			}
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

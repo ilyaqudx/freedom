@@ -139,6 +139,9 @@ public class NioProcessor {
 		
 		/**
 		 * read client data
+		 * 
+		 * 数据读完了,也删除了当前的读事件.为什么还有读事件不停的来.查看一下是否读取的数据为0,读完后,
+		 * 自己的BYTEBUFFER没有可读的空间 pos = limit
 		 * **/
 		private void client_sock_read(NioSession session,StorageTask storageTask)
 		{
@@ -159,10 +162,17 @@ public class NioProcessor {
 							storageTask.offset;
 					try
 					{
+						//这儿做个测试,当RECV_BYTES为0时,还有读事件过来,判断 一下是否真的还有数据
+						if(recv_bytes == 0){
+							/*ByteBuffer test  = ByteBuffer.allocate(10);
+							int testLen = session.getChannel().read(test);
+							System.out.println(test);*/
+						}
 						//only read recv_bytes
 						ByteBuffer buffer = storageTask.buffer;
 						buffer.limit(storageTask.buffer.position() + recv_bytes);
 						int len = session.getChannel().read(storageTask.buffer);
+						
 						if(clientInfo.total_length == 0){
 							//no enough header
 							if(len < recv_bytes){
@@ -182,6 +192,8 @@ public class NioProcessor {
 						
 						storageTask.offset += len;
 						storageTask.buffer.position(storageTask.offset);
+						System.out.println(String.format("本次接收数据的长度 : %d , 累计接收数据长度 : %d,"
+								+ "还剩余数据 : %d", len,buffer.position(),storageTask.length - storageTask.offset));
 						if(storageTask.offset >= storageTask.length){//read done this turn
 							if (clientInfo.total_offset + storageTask.length >= 
 									clientInfo.total_length)

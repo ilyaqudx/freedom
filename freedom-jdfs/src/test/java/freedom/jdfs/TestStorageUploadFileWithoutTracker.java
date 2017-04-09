@@ -1,5 +1,6 @@
 package freedom.jdfs;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -16,10 +17,26 @@ public class TestStorageUploadFileWithoutTracker {
 	
 	public static void main(String[] args) throws Exception 
 	{
+		for (int i = 0; i <256; i++) {
+			new Thread(new Runnable() {
+				public void run() {
+					try {
+						concurrentTest();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}).start();
+		}
+	}
+	
+	private static final void concurrentTest() throws IOException
+	{
 		Socket socket = new Socket();
 		socket.connect(new InetSocketAddress("localhost", 23000));
 		
-		byte[] data = Files.readAllBytes(Paths.get("e:/lanyopss.sql"));
+		byte[] data = Files.readAllBytes(Paths.get("D:/迅雷下载/filedir/azy-tool-0.0.1.jar"));
 		
 		byte[] dataLenBuff = Globle.long2buff(data.length);
 		
@@ -35,5 +52,7 @@ public class TestStorageUploadFileWithoutTracker {
 		out.write("sql\0\0\0".getBytes());//扩展名  6字节
 		out.write(data);//文件数据
 		out.flush();
+		
+		socket.getInputStream().read();
 	}
 }

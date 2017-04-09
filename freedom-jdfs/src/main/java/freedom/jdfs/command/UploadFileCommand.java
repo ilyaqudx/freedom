@@ -333,7 +333,11 @@ public class UploadFileCommand implements Command {
 
 		//base64_encode_ex(g_fdfs_base64_context, buff, 4 * 5, encoded,filename_len, false);
 		String encodeString = new sun.misc.BASE64Encoder().encode(buff);   
+		//检查文件名是否有\
+		encodeString = encodeString.replace("\\", "Z");
+		encodeString = encodeString.replace("/", "Z");
 		encoded = encodeString.getBytes();
+		
 		
 
 		if (!clientInfo.file_context.extra_info.upload.if_sub_path_alloced)

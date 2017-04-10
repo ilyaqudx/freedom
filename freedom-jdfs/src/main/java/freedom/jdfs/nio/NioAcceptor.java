@@ -119,8 +119,15 @@ public class NioAcceptor {
 	{
 		NioSession session = newSession(channel);
 		NioProcessor processor = getProcessor(session);
-		processor.addNewSession(session);
+		//这儿又是自己把自己坑了
+		//先绑定session再添加到nio,后放时经常出现STORAGETASK中的SIZE为0的情况,导致LENGTH也为0.UNDER_BUFFER_EXCEPTION,
+		//这儿其实就是内存可见性导致的问题.session task is not null .but task size is 0.
+		//试验一下.将task size set final 解决了SIZE为0的问题
+		//试验2:将task size set volatile能否解决SIZE为0的问题?我觉得是可以的,但事实是不行的.
+		//本身这儿的逻辑就应该先绑定TASK再放入NIO线程去处理.避免这种并发引起的数据问题.
+		//这是一个很好的例子.并发的经验发生了内存可见性问题
 		bindStorageTask(session);
+		processor.addNewSession(session);
 		return session;
 	}
 

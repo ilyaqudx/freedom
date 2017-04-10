@@ -38,8 +38,7 @@ public class StorageDioWriteTask extends Thread{
 					//打开文件
 					dio_open_file(fileContext);
 					//写入数据到磁盘
-					fileContext.file.write(storageTask.buffer.array(), fileContext.buff_offset, 
-							storageTask.length - fileContext.buff_offset);
+					//fileContext.file.write(storageTask.buffer.array(), fileContext.buff_offset, storageTask.length - fileContext.buff_offset);
 					//本次数据全部写入后,记录整个OFFSET的位置
 					//storageTask.clientInfo.total_offset += storageTask.length;
 					//当次offset,length重置
@@ -124,13 +123,13 @@ public class StorageDioWriteTask extends Thread{
 						}*/
 						clientInfo.clean_func.callback(storageTask);
 						
+						LogKit.info(String.format("[Channel %d success write file : %s]",storageTask.session.id,new String(clientInfo.file_context.filename)), StorageDioWriteTask.class);
 						if (fileContext.done_callback != null)
 						{
 							//fileContext.done_callback(storageTask, null);
-							fileContext.done_callback.callback(storageTask);
+							//fileContext.done_callback.callback(storageTask);
 						}
 						
-						LogKit.info(String.format("[Channel %d success write file : %s]",storageTask.session.id,new String(clientInfo.file_context.filename)), StorageDioWriteTask.class);
 					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
@@ -171,7 +170,7 @@ public class StorageDioWriteTask extends Thread{
 		
 		//参考方法 : storage_get_store_path
 		String fileName = new String(fileContext.filename);
-		System.out.println("write file name : " + fileName);
+		//System.out.println("write file name : " + fileName);
 		RandomAccessFile randomFile = new RandomAccessFile(fileName, "rw");
 		//设置文件的大小
 		randomFile.setLength(fileContext.end);

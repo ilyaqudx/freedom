@@ -39,7 +39,7 @@ public class UploadFileCommand implements Command {
 		long file_offset;
 		long file_bytes;
 		int crc32;
-		int store_path_index;
+		int store_path_index = 0;
 		int result;
 		int filename_len;
 		//包体长度
@@ -57,7 +57,15 @@ public class UploadFileCommand implements Command {
 
 		storageTask.buffer.position(10);
 		//头部后第一个字节:存储路径索引
-		store_path_index = storageTask.buffer.get();
+		try {
+			//这儿居然storageTask.length = 0,整个BUFFER只接收了10个字节.
+			//查看了size也为0.那么应该是SIZE也为0导致 了.因为在前面赋值时,如果整个请求大于了SIZE的大小则用了SIZE的大小赋值给了LENGTH
+			//居然session是空的
+			store_path_index = storageTask.buffer.get();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		if (store_path_index == -1)
 		{
@@ -268,7 +276,6 @@ public class UploadFileCommand implements Command {
 				task.offset = 0;
 				task.session.task = null;
 				task.session = null;
-				task.clientInfo.file_context = null;
 				task.clientInfo.total_length = 0;
 				task.clientInfo.total_offset = 0;
 				task.clientInfo.clean_func = null;
@@ -282,6 +289,7 @@ public class UploadFileCommand implements Command {
 				task.clientInfo.file_context.sync_flag = 0;
 				task.clientInfo.file_context.done_callback = null;
 				task.clientInfo.file_context.filename = null;
+				task.clientInfo.file_context = null;
 				
 				//回收task复用
 				StorageTaskPool.I.free(task);

@@ -17,7 +17,7 @@ public class StorageTaskPool {
 	/**
 	 * max task count
 	 * */
-	public static final int MAX_TASK_COUNT = 256;
+	public static final int MAX_TASK_COUNT = 1000;
 	/**
 	 * 每次分配多少task
 	 * */
@@ -46,6 +46,9 @@ public class StorageTaskPool {
 				allocCount++;
 				StorageTask task = new StorageTask();
 				task.size = max_buffer_size;
+				if(task.size <= 0){
+					LogKit.error("【alloc task size is 0】", this.getClass());
+				}
 				task.buffer = ByteBuffer.allocate(max_buffer_size);
 				queue.add(task);
 			}

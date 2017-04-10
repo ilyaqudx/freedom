@@ -5,6 +5,7 @@ import java.io.RandomAccessFile;
 import java.util.concurrent.BlockingQueue;
 import java.util.zip.CRC32;
 
+import freedom.jdfs.LogKit;
 import freedom.jdfs.storage.Globle;
 import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
@@ -71,13 +72,15 @@ public class StorageDioWriteTask extends Thread{
 						}
 					}*/
 					//记录整个文件的写入偏移量
-					fileContext.offset += storageTask.length - fileContext.buff_offset;
+					fileContext.offset += (storageTask.length - fileContext.buff_offset);
+					//LogKit.info(String.format("[Channel %d - filename : %s]成功写入数据  :%d,累计 offset : %d,总长度 : %d", storageTask.session.id
+						//	,new String(fileContext.filename),(storageTask.length - fileContext.buff_offset),fileContext.offset,fileContext.end), StorageDioWriteTask.class);
 					if (fileContext.offset < fileContext.end)
 					{
-						storageTask.offset = 0;
+						/*storageTask.offset = 0;
 						storageTask.length = 0;
-						storageTask.buffer.clear();
-						fileContext.buff_offset = 0;
+						storageTask.buffer.clear();移动动nio去处理
+						fileContext.buff_offset = 0;*/
 						storage_nio_notify(storageTask);  //notify nio to deal
 					}
 					else
@@ -126,6 +129,8 @@ public class StorageDioWriteTask extends Thread{
 							//fileContext.done_callback(storageTask, null);
 							fileContext.done_callback.callback(storageTask);
 						}
+						
+						LogKit.info(String.format("[Channel %d success write file : %s]",storageTask.session.id,new String(clientInfo.file_context.filename)), StorageDioWriteTask.class);
 					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block

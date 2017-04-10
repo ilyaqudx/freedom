@@ -17,6 +17,7 @@ import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
 import freedom.jdfs.storage.StorageServer;
 import freedom.jdfs.storage.StorageTask;
+import freedom.jdfs.storage.StorageTaskPool;
 import freedom.jdfs.storage.TaskDealFunc;
 import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
 
@@ -258,6 +259,32 @@ public class UploadFileCommand implements Command {
 			@Override
 			public int callback(StorageTask task) 
 			{
+				//先处理上传后的文件名等信息
+				StorageFileContext fileContext = task.clientInfo.file_context;
+				//上传任务完成.重置task的参数信息
+				task.buffer.clear();
+				task.client_ip = null;
+				task.length = 0;
+				task.offset = 0;
+				task.session.task = null;
+				task.session = null;
+				task.clientInfo.file_context = null;
+				task.clientInfo.total_length = 0;
+				task.clientInfo.total_offset = 0;
+				task.clientInfo.clean_func = null;
+				task.clientInfo.deal_func  = null;
+				task.clientInfo.stage = 0;
+				task.clientInfo.file_context.buff_offset = 0;
+				task.clientInfo.file_context.calc_crc32 = false;
+				task.clientInfo.file_context.end = 0;
+				task.clientInfo.file_context.start = 0;
+				task.clientInfo.file_context.timestamp2log = 0;
+				task.clientInfo.file_context.sync_flag = 0;
+				task.clientInfo.file_context.done_callback = null;
+				task.clientInfo.file_context.filename = null;
+				
+				//回收task复用
+				StorageTaskPool.I.free(task);
 				return 0;
 			}
 		};

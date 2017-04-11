@@ -2,6 +2,7 @@ package freedom.jdfs.nio;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -13,7 +14,8 @@ import freedom.jdfs.storage.StorageTaskPool;
 public class NioAcceptor {
 
 	private InetSocketAddress address;
-	private int backlog = 50;
+	/**等待队列.任务繁忙时,排队队列.可有效减少connect refuse exception*/
+	private int backlog = 150;
 	private volatile boolean running;
 	private int processor = Runtime.getRuntime().availableProcessors() + 1;
 	public static NioProcessor[] processors;
@@ -38,6 +40,8 @@ public class NioAcceptor {
 		{
 			Selector sel = Selector.open();
 			ServerSocketChannel channel = ServerSocketChannel.open();
+			channel.setOption(StandardSocketOptions.SO_RCVBUF, 32 * 1024);
+			channel.setOption(StandardSocketOptions.SO_RCVBUF, 32 * 1024);
 			channel.configureBlocking(false);
 			channel.bind(address, backlog);
 			
@@ -95,6 +99,9 @@ public class NioAcceptor {
 			{
 				ex.printStackTrace();
 			}
+		}
+		catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 	

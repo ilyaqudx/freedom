@@ -281,15 +281,15 @@ public class UploadFileCommand implements Command {
 				task.clientInfo.clean_func = null;
 				task.clientInfo.deal_func  = null;
 				task.clientInfo.stage = 0;
-				task.clientInfo.file_context.buff_offset = 0;
-				task.clientInfo.file_context.calc_crc32 = false;
-				task.clientInfo.file_context.end = 0;
-				task.clientInfo.file_context.start = 0;
-				task.clientInfo.file_context.timestamp2log = 0;
-				task.clientInfo.file_context.sync_flag = 0;
-				task.clientInfo.file_context.done_callback = null;
-				task.clientInfo.file_context.filename = null;
-				task.clientInfo.file_context = null;
+				fileContext.buff_offset = 0;
+				fileContext.calc_crc32 = false;
+				fileContext.end = 0;
+				fileContext.start = 0;
+				fileContext.timestamp2log = 0;
+				fileContext.sync_flag = 0;
+				fileContext.done_callback = null;
+				fileContext.filename = null;
+				fileContext = null;
 				
 				//回收task复用
 				StorageTaskPool.I.free(task);

@@ -13,7 +13,7 @@ public class Base64 {
 		int count = bytes.length / 3;
 		int mod   = bytes.length % 3;
 		int offset = 0;
-		int len = count * 4  + (mod > 0 ? 3 + 1 : 0);
+		int len = count * 4  + (mod > 0 ? 4 : 0);
 		int newLine = len / 76 * 2;//每76个字符添加\r\n
 		CharBuffer charBuffer = CharBuffer.allocate(len + newLine);
 		while(offset < count)

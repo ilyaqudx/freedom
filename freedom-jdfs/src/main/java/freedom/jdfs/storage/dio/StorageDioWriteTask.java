@@ -39,8 +39,8 @@ public class StorageDioWriteTask extends Thread{
 					dio_open_file(fileContext);
 					//写入数据到磁盘
 					//fileContext.file.write(storageTask.buffer.array(), fileContext.buff_offset, storageTask.length - fileContext.buff_offset);
-					//本次数据全部写入后,记录整个OFFSET的位置
-					//storageTask.clientInfo.total_offset += storageTask.length;
+					storageTask.buffer.position(fileContext.buff_offset);
+					int writeBytes = fileContext.file.getChannel().write(storageTask.buffer);
 					//当次offset,length重置
 					//计算CRC32值
 					if (fileContext.calc_crc32)
@@ -126,8 +126,7 @@ public class StorageDioWriteTask extends Thread{
 						LogKit.info(String.format("[Channel %d success write file : %s]",storageTask.session.id,new String(clientInfo.file_context.filename)), StorageDioWriteTask.class);
 						if (fileContext.done_callback != null)
 						{
-							//fileContext.done_callback(storageTask, null);
-							//fileContext.done_callback.callback(storageTask);
+							fileContext.done_callback.callback(storageTask);
 						}
 						
 					}

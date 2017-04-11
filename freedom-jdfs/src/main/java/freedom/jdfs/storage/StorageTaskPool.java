@@ -17,7 +17,7 @@ public class StorageTaskPool {
 	/**
 	 * max task count
 	 * */
-	public static final int MAX_TASK_COUNT = 1000;
+	public static final int MAX_TASK_COUNT = 256;
 	/**
 	 * 每次分配多少task
 	 * */
@@ -69,6 +69,7 @@ public class StorageTaskPool {
 	{
 		if(null != task)
 			queue.add(task);
+		System.out.println("free task : now size : " + queue.size());
 	}
 	
 	public static void main(String[] args) {

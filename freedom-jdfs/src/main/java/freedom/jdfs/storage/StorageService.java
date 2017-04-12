@@ -568,13 +568,11 @@ public class StorageService {
 		
 	}
 	
-	
-	@SuppressWarnings("restriction")
 	public static final String storage_gen_filename(StorageClientInfo clientInfo,
 			long file_size, int crc32, String formattedExt,long timestamp)
 	{
 		int timestampsec = (int) (timestamp / 1000);
-		byte[] encoded = new byte[33];
+		//byte[] encoded = new byte[33];
 		long masked_file_size  = ((file_size >> 32) == 0 ? Globle.COMBINE_RAND_FILE_SIZE(file_size) : file_size);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(20);
@@ -590,7 +588,7 @@ public class StorageService {
 		//检查文件名是否有\
 		//encodeString = encodeString.replace("\\", "Z");
 		//encodeString = encodeString.replace("/", "Z");
-		encoded = encodeString.getBytes();
+		byte[] encoded = encodeString.getBytes();
 		
 		
 
@@ -610,11 +608,9 @@ public class StorageService {
 				FDFS_STORAGE_DATA_DIR_FORMAT + "/", 
 				trunkInfo.path.subPathHigh, 
 				trunkInfo.path.subPathLow);
-		filename = new StringBuffer().append(filename)
-				.append(new String(encoded))
+		return new StringBuffer().append(filename)
+				.append(encodeString)
 				.append(formattedExt).toString();
-		
-		return filename;
 
 	}
 	

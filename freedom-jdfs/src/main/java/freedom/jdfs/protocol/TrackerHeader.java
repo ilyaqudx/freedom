@@ -2,19 +2,19 @@ package freedom.jdfs.protocol;
 /**
 	* receive package info
 	*/
-	public class PacketHeader
+	public class TrackerHeader
 	{
 		public byte[] body;
 		public byte errno;
 		public byte cmd;
 		
-		public PacketHeader(byte errno,byte[] body)
+		public TrackerHeader(byte errno,byte[] body)
 		{
 			this.body = body;
 			this.errno = errno;
 			
 		}
-		public PacketHeader(byte[] body,byte cmd,byte errno)
+		public TrackerHeader(byte[] body,byte cmd,byte errno)
 		{
 			this.body = body;
 			this.cmd  = cmd;   

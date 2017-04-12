@@ -26,19 +26,20 @@ public class StorageServer {
 
 	public static StorageServer context;
 	public StorageDioService storageDioService;
+	public static StorageConfig storageConfig;
 	public static void main(String[] args) throws Exception
 	{
 		context = new StorageServer();
 		//load config
-		StorageConfig storageConfig = loadConfig();
+		storageConfig = loadConfig();
 		//启动磁盘服务
 		context.storageDioService = new StorageDioService(storageConfig);
-		//启动网络监听
-		new NioAcceptor(new InetSocketAddress(storageConfig.getPort())).start();
 		//storage根目录 
 		String basePath = storageConfig.getBase_path();
 		//检查data目录是否存在,如果不存在则创建storage path
 		storage_check_and_make_data_dirs(storageConfig,basePath);
+		//启动网络监听
+		new NioAcceptor(new InetSocketAddress(storageConfig.getPort())).start();
 	}
 
 	private static void storage_check_and_make_data_dirs(StorageConfig storageConfig,String basePath)

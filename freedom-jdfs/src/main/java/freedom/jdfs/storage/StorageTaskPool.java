@@ -46,7 +46,10 @@ public class StorageTaskPool {
 				allocCount++;
 				StorageTask task = new StorageTask();
 				task.size = max_buffer_size;
-				task.buffer = ByteBuffer.allocate(max_buffer_size);
+				if(task.size <= 0){
+					LogKit.error("【alloc task size is 0】", this.getClass());
+				}
+				task.data = ByteBuffer.allocate(max_buffer_size);
 				queue.add(task);
 			}
 		}
@@ -66,6 +69,7 @@ public class StorageTaskPool {
 	{
 		if(null != task)
 			queue.add(task);
+		System.out.println("free task : now size : " + queue.size());
 	}
 	
 	public static void main(String[] args) {

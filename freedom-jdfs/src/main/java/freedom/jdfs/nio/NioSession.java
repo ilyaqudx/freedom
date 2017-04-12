@@ -133,4 +133,9 @@ public class NioSession {
         	newInterestOps &= ~SelectionKey.OP_READ;
         key.interestOps(newInterestOps);
 	}
+	
+	public int getIntested()
+	{
+		return key.interestOps();
+	}
 }

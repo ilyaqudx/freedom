@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
+import freedom.jdfs.Base64;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.protocol.TrackerHeader;
 import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
@@ -72,10 +73,7 @@ public class StorageService {
 
 		if (result == 0)
 		{
-			int filename_len;
 			//char *p;
-			String p;
-
 			if ((fileContext.createFlag & STORAGE_CREATE_FLAG_FILE) > 0)
 			{
 				/*
@@ -89,10 +87,11 @@ public class StorageService {
 					fileContext.end - fileContext.start)*/
 			}
 
-			filename_len = fileContext.fname2Log.length();
+			int filename_len = fileContext.fname2Log.length();
 			clientInfo.totalLength = ProtoCommon.HEADER_LENGTH + ProtoCommon.FDFS_GROUP_NAME_MAX_LEN + filename_len;
 			storageTask.data.position(ProtoCommon.HEADER_LENGTH);
 			storageTask.data.put(fileContext.extraInfo.upload.groupName.getBytes());//FDFS_GROUP_NAME_MAX_LEN
+			storageTask.data.put(fileContext.fname2Log.getBytes());
 		}
 		else
 		{
@@ -122,15 +121,15 @@ public class StorageService {
 
 	private static void storage_nio_notify(StorageTask storageTask) 
 	{
-		
+		storageTask.session.getProcessor().complete(storageTask);
 	}
 
 	private static int storage_service_upload_file_done(StorageTask storageTask)
 	{
 		int result;
 		int filename_len;
-		StorageClientInfo pClientInfo = storageTask.clientInfo;
-		StorageFileContext pFileContext = pClientInfo.fileContext;
+		StorageClientInfo clientInfo = storageTask.clientInfo;
+		StorageFileContext fileContext = clientInfo.fileContext;
 		long file_size = 0;
 		long file_size_in_name=0;
 		long end_time = 0;
@@ -139,10 +138,10 @@ public class StorageService {
 		String new_filename = null;//char new_filename[128];
 		int new_filename_len;
 
-		file_size = pFileContext.end - pFileContext.start;
+		file_size = fileContext.end - fileContext.start;
 
 		new_filename_len = 0;
-		if ((pFileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_TRUNK) > 0)
+		if ((fileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_TRUNK) > 0)
 		{
 			//TODO Continue
 			/*end_time = pFileContext.extra_info.upload.start_time;
@@ -181,24 +180,24 @@ public class StorageService {
 		//生成文件名
 		try 
 		{
-			FileEntity fileEntity = storage_get_filename(pClientInfo, end_time,file_size_in_name, pFileContext.crc32,
-					pFileContext.extraInfo.upload.formattedExtName);
+			FileEntity fileEntity = storage_get_filename(clientInfo, end_time,file_size_in_name, fileContext.crc32,
+					fileContext.extraInfo.upload.formattedExtName);
 			new_full_filename = fileEntity.getAbsolutePathName();
 			new_filename = fileEntity.getFileName();
 			
 		} catch (Exception e) {
-			storage_delete_file_auto(pFileContext);
+			storage_delete_file_auto(fileContext);
 			return ProtoCommon.FAIL;
 		}
 		
 		//下一步DEBUG到了这儿
-		pFileContext.extraInfo.upload.groupName = Globle.g_group_name;
+		fileContext.extraInfo.upload.groupName = Globle.g_group_name;
 		String format = "%c" + ProtoCommon.FDFS_STORAGE_DATA_DIR_FORMAT + "/%s";
 		new_fname2log = String.format(format, 
 				ProtoCommon.FDFS_STORAGE_STORE_PATH_PREFIX_CHAR, 
-				pFileContext.extraInfo.upload.trunkInfo.path.storePathIndex, new_filename);
+				fileContext.extraInfo.upload.trunkInfo.path.storePathIndex, new_filename);
 
-		if ((pFileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_TRUNK) > 0)
+		if ((fileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_TRUNK) > 0)
 		{
 			/*
 			 * TODO Continue
@@ -211,7 +210,7 @@ public class StorageService {
 				new_filename + FDFS_TRUE_FILE_PATH_LEN + 
 				FDFS_FILENAME_BASE64_LENGTH);*/
 		}
-		else if (rename(pFileContext.fileName, new_full_filename) != 0)
+		else if (rename(fileContext.fileName, new_full_filename) != 0)
 		{
 			/*logError("file: "__FILE__", line: %d, " 
 				"rename %s to %s fail, " 
@@ -223,15 +222,15 @@ public class StorageService {
 			return ProtoCommon.FAIL;
 		}
 
-		pFileContext.timestamp2Log = end_time;
-		if ((pFileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_APPENDER) > 0)
+		fileContext.timestamp2Log = end_time;
+		if ((fileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_APPENDER) > 0)
 		{
-			pFileContext.fname2Log =  new_fname2log;
-			pFileContext.createFlag = STORAGE_CREATE_FLAG_FILE;
-			return 0;
+			fileContext.fname2Log =  new_fname2log;
+			fileContext.createFlag = STORAGE_CREATE_FLAG_FILE;
+			return ProtoCommon.SUCCESS;
 		}
 
-		if ((pFileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_SLAVE) > 0)
+		if ((fileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_SLAVE) > 0)
 		{/*
 			char true_filename[128];
 			char filename[128];
@@ -324,13 +323,13 @@ public class StorageService {
 			return 0;
 		*/}
 
-		pFileContext.fname2Log = new_fname2log;
-		if ((pFileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_TRUNK) <= 0)
+		fileContext.fname2Log = new_fname2log;
+		if ((fileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_TRUNK) <= 0)
 		{
-			pFileContext.fileName = new_full_filename;
+			fileContext.fileName = new_full_filename;
 		}
 
-		if (Globle.g_check_file_duplicate && ((pFileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_LINK) <= 0))
+		if (Globle.g_check_file_duplicate && ((fileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_LINK) <= 0))
 		{/*
 			GroupArray[] pGroupArray;
 			byte[] value = new byte[128];
@@ -344,7 +343,7 @@ public class StorageService {
 			key_info.namespace_len = Globle.g_namespace_len;
 			key_info.szNameSpace = Globle.g_key_namespace;
 
-			pGroupArray=&((g_nio_thread_data+pClientInfo.nio_thread_index).group_array);
+			pGroupArray=&((g_nio_thread_data+clientInfo.nio_thread_index).group_array);
 
 			STORAGE_GEN_FILE_SIGNATURE(file_size,pFileContext.file_hash_codes, szFileSig);
 			
@@ -353,7 +352,7 @@ public class StorageService {
 				"file sig: %s", __LINE__, buff);
 			
 
-			nSigLen = FILE_SIGNATURE_SIZE(pClientInfo.file_context.fi);
+			nSigLen = FILE_SIGNATURE_SIZE(clientInfo.file_context.fi);
 			key_info.obj_id_len = nSigLen;
 			memcpy(key_info.szObjectId, szFileSig, nSigLen);
 			key_info.key_len = sizeof(FDHT_KEY_NAME_FILE_ID) - 1;
@@ -497,16 +496,16 @@ public class StorageService {
 			}
 		*/}
 
-		if ((pFileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_LINK) > 0)
+		if ((fileContext.extraInfo.upload.fileType & ProtoCommon._FILE_TYPE_LINK) > 0)
 		{
-			pFileContext.createFlag = STORAGE_CREATE_FLAG_LINK;
+			fileContext.createFlag = STORAGE_CREATE_FLAG_LINK;
 		}
 		else
 		{
-			pFileContext.createFlag = STORAGE_CREATE_FLAG_FILE;
+			fileContext.createFlag = STORAGE_CREATE_FLAG_FILE;
 		}
 
-		return 0;
+		return ProtoCommon.SUCCESS;
 }
 	
 	private static void STORAGE_GEN_FILE_SIGNATURE(long file_size,int[] hash_codes, byte[] sig_buff) {
@@ -519,7 +518,7 @@ public class StorageService {
 			Globle.int2buff(hash_codes[3], sig_buff,20); 
 		}
 		else 
-		{ 
+		{
 			System.arraycopy(hash_codes, 0, sig_buff, 8, 16);
 		}
 	}
@@ -691,7 +690,7 @@ public class StorageService {
 		
 		for (int i=0; i < padLen - 1; i++)
 		{
-			array[i] = (char) Globle.rand(127);
+			array[i] = Base64.BASE64_CODE.charAt(Globle.rand(62));
 		}
 
 		if (extNameLen > 0){

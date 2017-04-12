@@ -4,7 +4,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import freedom.jdfs.LogKit;
+import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.StorageConfig;
+import freedom.jdfs.storage.StorageServer;
 import freedom.jdfs.storage.StorageTask;
 
 /**
@@ -75,5 +77,19 @@ public class StorageDioService {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public int storage_dio_queue_push(StorageTask storageTask) 
+	{
+		try {
+			//set clientinfo.stage is 9
+			storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
+			StorageServer.context.storageDioService.addWriteTask(storageTask);
+		} catch (Exception e) {
+			e.printStackTrace();
+			//TODO add_to_deleted_list(storageTask);
+		}
+	
+		return ProtoCommon.SUCCESS;
 	}
 }

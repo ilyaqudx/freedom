@@ -160,12 +160,140 @@ public class NioProcessor {
 						client_sock_read(key,session,storageTask);
 					}
 					break;
+				case StorageTask.FDFS_STORAGE_STAGE_NIO_SEND:
+					//返回数据
+					storage_send_add_event(storageTask);
+					break;
 				default:
 					//LogKit.info(String.format("[Channel %d state is %d,has no function deal will to break]", session.id,clientInfo.stage), NioProcessor.class);
 					break;
 			}
 		}
 		
+		private int storage_send_add_event(StorageTask storageTask)
+		{
+			storageTask.offset = 0;
+
+			/* direct send   event is ?*/ 
+			client_sock_write((short)1,storageTask);
+
+			return ProtoCommon.SUCCESS;
+		}
+
+		private void client_sock_write(short event,StorageTask storageTask)
+		{
+			int bytes = 0;
+		    StorageClientInfo clientInfo = storageTask.clientInfo;
+			if (clientInfo.canceled)
+			{
+				return;
+			}
+
+			if ((event & ProtoCommon.IOEVENT_TIMEOUT) > 0)
+			{
+				LogKit.error("send timeout",NioProcessor.class);
+				//TODO task_finish_clean_up(storageTask);
+				return;
+			}
+
+			/*if ((event & ProtoCommon.IOEVENT_ERROR) > 0)
+			{
+				LogKit.error(String.format("client ip : %s,recv error event %d,close connection",storageTask.clientIp,event),NioProcessor.class);
+				//TODO task_finish_clean_up(storageTask);
+				return;
+			}*/
+
+			while (true)
+			{
+				/*fast_timer_modify(&pTask.thread_data.timer,
+					&pTask.event.timer, g_current_time +
+					g_fdfs_network_timeout);*/
+				try {
+					bytes = storageTask.session.getChannel().write(storageTask.data);
+				} catch (IOException e) {
+					e.printStackTrace();
+					LogKit.error(String.format("client ip : %s,write failed,error info", storageTask.clientIp,e.getMessage()), this.getClass());
+					//TODO task_finish_clean_up(pTask);
+				}
+				
+				//printf("%08X sended %d bytes\n", (int)pTask, bytes);
+				if (bytes < 0)
+				{
+					/*if (errno == EAGAIN || errno == EWOULDBLOCK)
+					{
+						set_send_event(pTask);
+					}
+					else if (errno == EINTR)
+					{
+						continue;
+					}
+					else
+					{
+						logError("file: "__FILE__", line: %d, " \
+							"client ip: %s, recv failed, " \
+							"errno: %d, error info: %s", \
+							__LINE__, pTask.client_ip, \
+							errno, STRERROR(errno));
+
+						task_finish_clean_up(pTask);
+					}
+
+					return;*/
+				}
+				else if (bytes == 0)
+				{
+					LogKit.error("send failed, connection disconnected.", NioProcessor.class);
+					//TODO task_finish_clean_up(pTask);
+					return;
+				}
+
+				storageTask.offset += bytes;
+				if (storageTask.offset >= storageTask.length)
+				{
+					/*
+					 * TODO 
+					 * if (set_recv_event(storageTask) != 0)
+					{
+						return;
+					}*/
+
+					clientInfo.totalOffset += storageTask.length;
+					if (clientInfo.totalOffset>=clientInfo.totalLength)
+					{
+						/*
+						 * TODO 
+						 * if (clientInfo.totalLength == ProtoCommon.HEADER_LENGTH
+							&& ((TrackerHeader *)storageTask.data).status == EINVAL)
+						{
+							logDebug("file: "__FILE__", line: %d, "\
+								"close conn: #%d, client ip: %s", \
+								__LINE__, storageTask.event.fd,
+								storageTask.client_ip);
+							task_finish_clean_up(storageTask);
+							return;
+						}*/
+
+						/*  reponse done, try to recv again */
+						clientInfo.totalLength = 0;
+						clientInfo.totalOffset = 0;
+						storageTask.offset = 0;
+						storageTask.length = 0;
+
+						clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;
+					}
+					else  //continue to send file content
+					{
+						storageTask.length = 0;
+						/* continue read from file */
+						StorageServer.context.storageDioService.storage_dio_queue_push(storageTask);
+					}
+
+					return;
+				}
+			}
+
+		}
+
 		/**
 		 * read client data
 		 * 
@@ -184,8 +312,8 @@ public class NioProcessor {
 				return;
 			
 			//TODO Notice
-			/*fast_timer_modify(&pTask->thread_data->timer,
-					&pTask->event.timer, g_current_time +
+			/*fast_timer_modify(&pTask.thread_data.timer,
+					&pTask.event.timer, g_current_time +
 					g_fdfs_network_timeout);*/
 			int recv_bytes = 0;
 			while(true){
@@ -254,7 +382,7 @@ public class NioProcessor {
 									clientInfo.totalLength)
 							{
 								/* current req recv done */
-								//clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_SEND;
+								clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_SEND;
 								storageTask.reqCount++;
 							}
 

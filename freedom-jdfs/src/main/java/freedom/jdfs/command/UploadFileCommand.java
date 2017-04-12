@@ -233,10 +233,7 @@ public class UploadFileCommand implements Command {
 
 		//put task to dio_queue  提取到NioProcessor storage_dio_queue_push方法
 		//让当前CHANNEL取消读
-		storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
-		StorageServer.context.storageDioService.addWriteTask(storageTask);
-		
-		
+		StorageServer.context.storageDioService.storage_dio_queue_push(storageTask);
 		return STORAGE_STATUE_DEAL_FILE;
 	}
 

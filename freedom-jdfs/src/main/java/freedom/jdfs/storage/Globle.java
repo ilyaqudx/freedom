@@ -42,7 +42,7 @@ public class Globle {
 	public static short g_subdir_count_per_path = 256;
 	public static int g_stat_change_count = 0;
 
-	public static byte[] g_group_name = new byte[ProtoCommon.FDFS_GROUP_NAME_MAX_LEN];//char g_group_name[FDFS_GROUP_NAME_MAX_LEN + 1] = {0};
+	public static String g_group_name ;//= new byte[ProtoCommon.FDFS_GROUP_NAME_MAX_LEN];//char g_group_name[FDFS_GROUP_NAME_MAX_LEN + 1] = {0};
 
 	public static int g_namespace_len;
 
@@ -61,6 +61,11 @@ public class Globle {
 	public static int rand() 
 	{
 		return random.nextInt();
+	}
+	
+	public static int rand(int max) 
+	{
+		return random.nextInt(max);
 	}
 	
 	public static boolean existFile(String basePath, String lastStorageDir) 

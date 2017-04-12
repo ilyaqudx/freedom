@@ -106,8 +106,8 @@ public class NioProcessor {
 				while((storageTask = completeTaskQueue.poll()) != null){
 					storageTask.offset = 0;
 					storageTask.length = 0;
-					storageTask.buffer.clear();
-					storageTask.clientInfo.file_context.buff_offset = 0;
+					storageTask.data.clear();
+					storageTask.clientInfo.fileContext.buffOffset = 0;
 					storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;
 					storageTask.session.setIntestedRead(true);
 					//1292line why 【Channel : 9 重新注册读事件】task.offset : 262144,task.length = 262144 ,buffer : java.nio.HeapByteBuffer[pos=262144 lim=262144 cap=262144]
@@ -154,7 +154,7 @@ public class NioProcessor {
 				case StorageTask.FDFS_STORAGE_STAGE_NIO_RECV:
 					//TODO Notice storageTask.offset = 0;  之后 再看为什么要重设为0
 					//为啥已经将STAGE设置为8还是可以进来
-					int remain_bytes = (int)(clientInfo.total_length - clientInfo.total_offset);
+					int remain_bytes = (int)(clientInfo.totalLength - clientInfo.totalOffset);
 					storageTask.length = remain_bytes > storageTask.size ? storageTask.size : remain_bytes;
 					if(set_recv_event(storageTask)){
 						client_sock_read(key,session,storageTask);
@@ -191,7 +191,7 @@ public class NioProcessor {
 			while(true){
 					//need recv bytes from socket
 				//【Channel 9】buffer before recv : java.nio.HeapByteBuffer[pos=262144 lim=262144 cap=262144],recv_bytes : -195159
-					recv_bytes = clientInfo.total_length == 0 ? ProtoCommon.HEADER_LENGTH : storageTask.length - 
+					recv_bytes = clientInfo.totalLength == 0 ? ProtoCommon.HEADER_LENGTH : storageTask.length - 
 							storageTask.offset;
 					try
 					{
@@ -207,11 +207,11 @@ public class NioProcessor {
 							//判断一下,处理一下,直接进行磁盘处理
 						}
 						//only read recv_bytes
-						ByteBuffer buffer = storageTask.buffer;
+						ByteBuffer buffer = storageTask.data;
 						//LogKit.info("【Channel " +session.id+ "】buffer before recv : " + buffer + ",recv_bytes : " + recv_bytes,NioProcessor.class);
-						buffer.limit(storageTask.buffer.position() + recv_bytes);
+						buffer.limit(storageTask.data.position() + recv_bytes);
 						
-						int len = session.getChannel().read(storageTask.buffer);
+						int len = session.getChannel().read(storageTask.data);
 						if(len == 0){
 							//LogKit.info("【Channel " +session.id+ "】读事件中读取到了数据为0的情况,缓冲区确实没有数据了.跳出循环,下一轮再来读取" + buffer,NioProcessor.class);
 							//这儿读到0的情况是因为一直在死循环中,如果没有读取到完整的BUFFER的大小的数据则会一直读,但是这时候可能缓冲区确实没有数据,所以返回了0
@@ -219,29 +219,29 @@ public class NioProcessor {
 							//数据,则会造成其他所有的处理都不能处理.这是代码写的有问题.fastdfs本身是这样处理的
 							break;
 						}
-						if(clientInfo.total_length == 0){
+						if(clientInfo.totalLength == 0){
 							//no enough header
 							if(len < recv_bytes){
 								storageTask.offset += len;
 								return;
 							}
 							buffer.position(0);
-							clientInfo.total_length = buffer.getLong();
-							if(clientInfo.total_length <= 0){
+							clientInfo.totalLength = buffer.getLong();
+							if(clientInfo.totalLength <= 0){
 								//log error TODO
-								LogKit.error(String.format("【Channel %d total_length <= 0 , buffer : %s】", session.id,storageTask.buffer), this.getClass());
+								LogKit.error(String.format("【Channel %d total_length <= 0 , buffer : %s】", session.id,storageTask.data), this.getClass());
 								return;
 							}
-							clientInfo.total_length += ProtoCommon.HEADER_LENGTH;
+							clientInfo.totalLength += ProtoCommon.HEADER_LENGTH;
 							if(storageTask.size == 0){
 								System.out.println("print task size is 0");
 							}
-							storageTask.length = (int)(clientInfo.total_length > storageTask.size ? 
-									storageTask.size : clientInfo.total_length);
+							storageTask.length = (int)(clientInfo.totalLength > storageTask.size ? 
+									storageTask.size : clientInfo.totalLength);
 						}
 						
 						storageTask.offset += len;
-						storageTask.buffer.position(storageTask.offset);
+						storageTask.data.position(storageTask.offset);
 						//LogKit.info(String.format("【Channel %d】[task.offset : %d,task.length : %d]本次实际接收数据的长度 : %d ,本次期望接收数据长度 : %d ,累计接收数据长度 : %d,"
 							//	+ "还剩余数据 : %d", session.id,storageTask.offset,storageTask.length,len,recv_bytes,storageTask.offset,storageTask.length - storageTask.offset),NioProcessor.class);
 						if(storageTask.offset >= storageTask.length){//这个条件为什么有时候没有满足?是线程的问题还
@@ -250,22 +250,22 @@ public class NioProcessor {
 							}
 							session.setIntestedRead(false);//会不会在设置取消读事件的之前,就已经有数据到来并且放到在selections里面了,设置之后 到来的,不会响应.
 							//LogKit.info(String.format("【Channel %d】[task.offset : %d,task.length : %d,buffer : %s]已经组成一个完整的TASK,可以进行磁盘操作同时将channel的opt的读取消 : opts : %d", session.id,storageTask.offset,storageTask.length,storageTask.buffer,session.getIntested()),NioProcessor.class);
-							if (clientInfo.total_offset + storageTask.length >= 
-									clientInfo.total_length)
+							if (clientInfo.totalOffset + storageTask.length >= 
+									clientInfo.totalLength)
 							{
 								/* current req recv done */
 								//clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_SEND;
-								storageTask.req_count++;
+								storageTask.reqCount++;
 							}
 
-							if (clientInfo.total_offset == 0)
+							if (clientInfo.totalOffset == 0)
 							{
-								clientInfo.total_offset = storageTask.length;
+								clientInfo.totalOffset = storageTask.length;
 								storage_deal_task(session,storageTask);
 							}
 							else
 							{
-								clientInfo.total_offset += storageTask.length;
+								clientInfo.totalOffset += storageTask.length;
 
 								/* continue write to file */
 								storage_dio_queue_push(session,storageTask);

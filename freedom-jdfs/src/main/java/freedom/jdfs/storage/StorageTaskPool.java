@@ -49,7 +49,7 @@ public class StorageTaskPool {
 				if(task.size <= 0){
 					LogKit.error("【alloc task size is 0】", this.getClass());
 				}
-				task.buffer = ByteBuffer.allocate(max_buffer_size);
+				task.data = ByteBuffer.allocate(max_buffer_size);
 				queue.add(task);
 			}
 		}

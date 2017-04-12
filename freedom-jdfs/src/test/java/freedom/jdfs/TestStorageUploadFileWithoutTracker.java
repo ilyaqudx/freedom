@@ -15,17 +15,19 @@ public class TestStorageUploadFileWithoutTracker {
 	
 	public static void main(String[] args) throws Exception 
 	{
-		for (int i = 0; i <10; i++) {
+		for (int i = 0; i < 1; i++) {
 			new Thread(new Runnable() {
 				public void run() {
 					try {
 						concurrentTest();
+						
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
 			}).start();
+			//Thread.sleep(1000);
 		}
 	}
 	
@@ -35,7 +37,7 @@ public class TestStorageUploadFileWithoutTracker {
 		SocketChannel channel = SocketChannel.open();
 		boolean connected = channel.connect(new InetSocketAddress("localhost", 23000));
 		
-		FileChannel fileChannel = FileChannel.open(Paths.get("1.rmvb"));
+		FileChannel fileChannel = FileChannel.open(Paths.get("5.jpg"));
 		int fileLength = (int) fileChannel.size();
 		ByteBuffer buffer = ByteBuffer.allocate(2 * 1024 * 1024);
 		buffer.putLong(1 + 8 + 6 + fileLength);
@@ -45,7 +47,7 @@ public class TestStorageUploadFileWithoutTracker {
 		//data
 		buffer.put((byte) 0);//store_path_index
 		buffer.putLong(fileLength);//文件长度
-		buffer.put("zip\0\0\0".getBytes());//扩展名  6字节
+		buffer.put("jpg\0\0\0".getBytes());//扩展名  6字节,这儿多传了一个点.服务器保存后就在文件中多保存了一个字节,在第一个字节处.这个是服务器有问题.
 		
 		long start = System.currentTimeMillis();
 		int offset = 0;
@@ -58,7 +60,7 @@ public class TestStorageUploadFileWithoutTracker {
 			buffer.flip();
 			int len = channel.write(buffer);
 			offset += len;
-			System.out.println(String.format("【本次写出数据  : %d , 累计写出数据  : %d】",len,offset));
+			//System.out.println(String.format("【本次写出数据  : %d , 累计写出数据  : %d】",len,offset));
 			if(buffer.hasRemaining()){
 				buffer.compact();
 			}else

@@ -24,7 +24,7 @@ public class CommandRouter {
 	
 	public static final void route(NioSession session,StorageTask storageTask)
 	{
-		byte cmd = storageTask.buffer.get(ProtoCommon.HEADER_LENGTH - 1);
+		byte cmd = storageTask.data.get(ProtoCommon.HEADER_LENGTH - 1);
 		Command command = commands.get(cmd);
 		if(command == null)
 			LOGGER.error(String.format("cmd is not found : %d", cmd));

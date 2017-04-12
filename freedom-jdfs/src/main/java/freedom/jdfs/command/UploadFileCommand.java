@@ -14,6 +14,7 @@ import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
 import freedom.jdfs.storage.StorageServer;
 import freedom.jdfs.storage.StorageService;
+import freedom.jdfs.storage.StorageService.FileEntity;
 import freedom.jdfs.storage.StorageTask;
 import freedom.jdfs.storage.StorageTaskPool;
 import freedom.jdfs.storage.TaskDealFunc;
@@ -27,85 +28,84 @@ public class UploadFileCommand implements Command {
 	public int execute(NioSession session, StorageTask storageTask) 
 	{
 		StorageClientInfo clientInfo = storageTask.clientInfo;
-		StorageFileContext fileContext = clientInfo.file_context;
+		StorageFileContext fileContext = clientInfo.fileContext;
 		DisconnectCleanFunc clean_func;
-		//int offset = (int) clientInfo.total_offset;
-		byte[] filename = new byte[128];
-		byte[] file_ext_name = new byte[7];
+		String fileExtName ;//= new byte[7];
 		long packetLen;//包体长度
-		long file_offset;
-		long file_bytes;
+		long fileOffset;
+		long fileBytes;
 		int crc32;
-		int store_path_index = 0;
+		int storePathIndex = 0;
 		int result;
-		int filename_len;
 		//包体长度
-		packetLen = clientInfo.total_length - ProtoCommon.HEADER_LENGTH;
+		packetLen = clientInfo.totalLength - ProtoCommon.HEADER_LENGTH;
 
 		if (packetLen < 1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
 				ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN)
 		{
 			LogKit.error(String.format("client ip: %s, package size %ld is not correct,expect length >= %d", 
-					storageTask.client_ip,packetLen,
+					storageTask.clientIp,packetLen,
 					1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
 					ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN),this.getClass());
 			return ProtoCommon.EINVAL;
 		}
 
-		storageTask.buffer.position(10);
+		storageTask.data.position(10);
 		//头部后第一个字节:存储路径索引
 		try {
 			//这儿居然storageTask.length = 0,整个BUFFER只接收了10个字节.
 			//查看了size也为0.那么应该是SIZE也为0导致 了.因为在前面赋值时,如果整个请求大于了SIZE的大小则用了SIZE的大小赋值给了LENGTH
 			//居然session是空的
-			store_path_index = storageTask.buffer.get();
+			storePathIndex = storageTask.data.get();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
-		if (store_path_index == -1)
+		if (storePathIndex == -1)
 		{
-			if ((result = StorageService.storage_get_storage_path_index(store_path_index)) != 0)
+			if ((result = StorageService.storage_get_storage_path_index(storePathIndex)) != 0)
 			{
 				LogKit.error(String.format("get_storage_path_index fail,errno: %d",result),this.getClass());
 				return result;
 			}
 		}
-		else if (store_path_index < 0 || store_path_index >= Globle.g_fdfs_store_paths.count)
+		else if (storePathIndex < 0 || storePathIndex >= Globle.g_fdfs_store_paths.count)
 		{
-			LogKit.error(String.format("store_path_index: %d is invalid",store_path_index),this.getClass());
+			LogKit.error(String.format("store_path_index: %d is invalid",storePathIndex),this.getClass());
 			return ProtoCommon.EINVAL;
 		}
 
 		//真实文件的长度
-		file_bytes = storageTask.buffer.getLong();
-		if (file_bytes < 0 || file_bytes != packetLen - (1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
+		fileBytes = storageTask.data.getLong();
+		if (fileBytes < 0 || fileBytes != packetLen - (1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
 						ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN))
 		{
-			LogKit.error(String.format("pkg length is not correct,invalid file bytes: %ld, total body length: %ld",file_bytes, packetLen),this.getClass());
+			LogKit.error(String.format("pkg length is not correct,invalid file bytes: %ld, total body length: %ld",fileBytes, packetLen),this.getClass());
 			return ProtoCommon.EINVAL;
 		}
-		storageTask.buffer.get(file_ext_name,0,6);
+		byte[] fileExtNameBuffer = new byte[6];
+		storageTask.data.get(fileExtNameBuffer,0,6);
+		fileExtName = new String(fileExtNameBuffer);
 		//将第7字节设置为'\0' end
-		file_ext_name[ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN] = '\0';
+		//fileExtName[ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN] = '\0';
 		//validate file name
-		if ((result = StorageService.fdfs_validate_filename(file_ext_name)) != 0)
+		if ((result = StorageService.fdfs_validate_filename(fileExtName)) != 0)
 		{
-			LogKit.error(String.format("file_ext_name: %s is invalid!",file_ext_name),this.getClass());
+			LogKit.error(String.format("file_ext_name: %s is invalid!",fileExtName),this.getClass());
 			return result;
 		}
 
-		fileContext.calc_crc32 = true;//need crc32 validate
-		fileContext.calc_file_hash = Globle.g_check_file_duplicate;//validate repeate file default false
-		fileContext.extra_info.upload.start_time = Globle.now();//record current time
+		fileContext.calcCrc32 = true;//need crc32 validate
+		fileContext.calcFileHash = Globle.g_check_file_duplicate;//validate repeate file default false
+		fileContext.extraInfo.upload.startTime = Globle.now();//record current time
 		//set file ext name
-		fileContext.extra_info.upload.file_ext_name = file_ext_name;
-		StorageService.storage_format_ext_name(file_ext_name,fileContext.extra_info.upload.formatted_ext_name);//fommat file ext name
-		fileContext.extra_info.upload.trunk_info.path.store_path_index = (short) store_path_index;//set store_path_index
-		fileContext.extra_info.upload.file_type = ProtoCommon._FILE_TYPE_REGULAR;//set file type
-		fileContext.sync_flag = ProtoCommon.STORAGE_OP_TYPE_SOURCE_CREATE_FILE;//set storage opt
-		fileContext.timestamp2log = fileContext.extra_info.upload.start_time;
+		fileContext.extraInfo.upload.fileExtName = fileExtName;
+		fileContext.extraInfo.upload.formattedExtName = StorageService.storage_format_ext_name(fileExtName);//fommat file ext name
+		fileContext.extraInfo.upload.trunkInfo.path.storePathIndex = (short) storePathIndex;//set store_path_index
+		fileContext.extraInfo.upload.fileType = ProtoCommon._FILE_TYPE_REGULAR;//set file type
+		fileContext.syncFlag = ProtoCommon.STORAGE_OP_TYPE_SOURCE_CREATE_FILE;//set storage opt
+		fileContext.timestamp2Log = fileContext.extraInfo.upload.startTime;
 		fileContext.op = ProtoCommon.FDFS_STORAGE_FILE_OP_WRITE;//set context op is FDFS_STORAGE_FILE_OP_WRITE
 		/*if (bAppenderFile)
 		{
@@ -167,29 +167,28 @@ public class UploadFileCommand implements Command {
 			}*/
 
 			crc32 = Globle.rand();
-			filename[0] = '\0';
-			filename_len = 0;
-			fileContext.extra_info.upload.if_sub_path_alloced = false;
+			fileContext.extraInfo.upload.ifSubPathAlloced = false;
 			//generate store file name
-			fileContext.filename = StorageService.storage_get_filename(clientInfo, 
-					fileContext.extra_info.upload.start_time, 
-					file_bytes, crc32, fileContext.extra_info.upload.
-					formatted_ext_name, new String(filename), filename_len).getBytes();
-
+			FileEntity fileEntity= StorageService.storage_get_filename(clientInfo, 
+					fileContext.extraInfo.upload.startTime, 
+					fileBytes, crc32, fileContext.extraInfo.upload.formattedExtName);
+			fileContext.fileName = fileEntity.getAbsolutePathName();
+			
+			
 			//set clean callback
 			clean_func = dio_write_finish_clean_up(storageTask);
-			file_offset = 0;
-			fileContext.extra_info.upload.if_gen_filename = true;
-			fileContext.extra_info.upload.before_open_callback = null;
-			fileContext.extra_info.upload.before_close_callback = null;
-			fileContext.open_flags = ProtoCommon.O_WRONLY | ProtoCommon.O_CREAT | ProtoCommon.O_TRUNC | Globle.g_extra_open_file_flags;
+			fileOffset = 0;
+			fileContext.extraInfo.upload.ifGenFileName = true;
+			fileContext.extraInfo.upload.beforeOpenCallback = null;
+			fileContext.extraInfo.upload.beforeCloseCallback = null;
+			fileContext.openFlags = ProtoCommon.O_WRONLY | ProtoCommon.O_CREAT | ProtoCommon.O_TRUNC | Globle.g_extra_open_file_flags;
 		}
 
 		//write to file
-	  return storage_write_to_file(storageTask, file_offset, file_bytes, 
-				storageTask.buffer.position(), dio_write_file(), 
+	  return storage_write_to_file(storageTask, fileOffset, fileBytes, 
+				storageTask.data.position(), dio_write_file(), 
 				storage_upload_file_done_callback(), 
-				clean_func, store_path_index);
+				clean_func, storePathIndex);
 
 	}
 
@@ -199,23 +198,21 @@ public class UploadFileCommand implements Command {
 			FileDealDoneCallback storage_upload_file_done_callback,
 			DisconnectCleanFunc clean_func, int store_path_index)
 	{
-		int result;
-		StorageClientInfo clientInfo = storageTask.clientInfo;
-		StorageFileContext fileContext =  clientInfo.file_context;
+		StorageClientInfo clientInfo   = storageTask.clientInfo;
+		StorageFileContext fileContext =  clientInfo.fileContext;
 
-		clientInfo.deal_func = dio_write_file;
-		clientInfo.clean_func = clean_func;
+		clientInfo.dealFunc = dio_write_file;
+		clientInfo.cleanFunc = clean_func;
 
-		fileContext.fd = -1;
-		fileContext.buff_offset = buff_offset;
+		fileContext.buffOffset = buff_offset;
 		fileContext.offset = file_offset;
 		fileContext.start = file_offset;
 		fileContext.end = file_offset + upload_bytes;
 		//get dio thread TODO Continue 现在只写死一个线程
 		//fileContext.dio_thread_index = storage_dio_get_thread_index(storageTask, store_path_index, fileContext.op);
-		fileContext.done_callback = storage_upload_file_done_callback;
+		fileContext.doneCallback = storage_upload_file_done_callback;
 
-		if (fileContext.calc_crc32)
+		if (fileContext.calcCrc32)
 		{
 			fileContext.crc32 = CRC32_XINIT;
 		}
@@ -264,27 +261,27 @@ public class UploadFileCommand implements Command {
 			public int callback(StorageTask task) 
 			{
 				//先处理上传后的文件名等信息
-				StorageFileContext fileContext = task.clientInfo.file_context;
+				StorageFileContext fileContext = task.clientInfo.fileContext;
 				//上传任务完成.重置task的参数信息
-				task.buffer.clear();
-				task.client_ip = null;
+				task.data.clear();
+				task.clientIp = null;
 				task.length = 0;
 				task.offset = 0;
 				task.session.task = null;
 				task.session = null;
-				task.clientInfo.total_length = 0;
-				task.clientInfo.total_offset = 0;
-				task.clientInfo.clean_func = null;
-				task.clientInfo.deal_func  = null;
+				task.clientInfo.totalLength = 0;
+				task.clientInfo.totalOffset = 0;
+				task.clientInfo.cleanFunc = null;
+				task.clientInfo.dealFunc  = null;
 				task.clientInfo.stage = 0;
-				fileContext.buff_offset = 0;
-				fileContext.calc_crc32 = false;
+				fileContext.buffOffset = 0;
+				fileContext.calcCrc32 = false;
 				fileContext.end = 0;
 				fileContext.start = 0;
-				fileContext.timestamp2log = 0;
-				fileContext.sync_flag = 0;
-				fileContext.done_callback = null;
-				fileContext.filename = null;
+				fileContext.timestamp2Log = 0;
+				fileContext.syncFlag = 0;
+				fileContext.doneCallback = null;
+				fileContext.fileName = null;
 				fileContext = null;
 				
 				//回收task复用

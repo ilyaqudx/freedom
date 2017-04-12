@@ -6,9 +6,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.zip.CRC32;
 
 import freedom.jdfs.LogKit;
+import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.Globle;
 import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
+import freedom.jdfs.storage.StorageService;
 import freedom.jdfs.storage.StorageTask;
 
 public class StorageDioWriteTask extends Thread{
@@ -34,20 +36,18 @@ public class StorageDioWriteTask extends Thread{
 				try {
 					StorageClientInfo clientInfo = storageTask.clientInfo;
 					//获得文件上下文信息
-					final StorageFileContext fileContext = clientInfo.file_context;
+					final StorageFileContext fileContext = clientInfo.fileContext;
 					//打开文件
 					dio_open_file(fileContext);
 					//写入数据到磁盘
-					//fileContext.file.write(storageTask.buffer.array(), fileContext.buff_offset, storageTask.length - fileContext.buff_offset);
-					storageTask.buffer.position(fileContext.buff_offset);
-					int writeBytes = fileContext.file.getChannel().write(storageTask.buffer);
+					storageTask.data.position(fileContext.buffOffset);
+					int writeBytes = fileContext.file.getChannel().write(storageTask.data);
 					//当次offset,length重置
 					//计算CRC32值
-					if (fileContext.calc_crc32)
+					if (fileContext.calcCrc32)
 					{
 						CRC32 crc = new CRC32();
-						crc.update(storageTask.buffer.array(), fileContext.buff_offset, 
-								storageTask.length - fileContext.buff_offset);
+						crc.update(storageTask.data.array(), fileContext.buffOffset,storageTask.length - fileContext.buffOffset);
 						fileContext.crc32 = (int) crc.getValue();
 					}
 					synchronized (lock) {
@@ -71,7 +71,7 @@ public class StorageDioWriteTask extends Thread{
 						}
 					}*/
 					//记录整个文件的写入偏移量
-					fileContext.offset += (storageTask.length - fileContext.buff_offset);
+					fileContext.offset += (storageTask.length - fileContext.buffOffset);
 					//LogKit.info(String.format("[Channel %d - filename : %s]成功写入数据  :%d,累计 offset : %d,总长度 : %d", storageTask.session.id
 						//	,new String(fileContext.filename),(storageTask.length - fileContext.buff_offset),fileContext.offset,fileContext.end), StorageDioWriteTask.class);
 					if (fileContext.offset < fileContext.end)
@@ -85,7 +85,7 @@ public class StorageDioWriteTask extends Thread{
 					else
 					{
 						//整个文件已经全部写入
-						if (fileContext.calc_crc32)
+						if (fileContext.calcCrc32)
 						{
 							//计算最终的crc32值
 							fileContext.crc32 = Globle.CRC32_FINAL(fileContext.crc32);
@@ -121,12 +121,13 @@ public class StorageDioWriteTask extends Thread{
 						{
 							fileContext.done_callback(pTask, result);
 						}*/
-						clientInfo.clean_func.callback(storageTask);
+						clientInfo.cleanFunc.callback(storageTask);
 						
-						LogKit.info(String.format("[Channel %d success write file : %s]",storageTask.session.id,new String(clientInfo.file_context.filename)), StorageDioWriteTask.class);
-						if (fileContext.done_callback != null)
+						LogKit.info(String.format("[Channel %d success write file : %s]",storageTask.session.id,new String(clientInfo.fileContext.fileName)), StorageDioWriteTask.class);
+						if (fileContext.doneCallback != null)
 						{
-							fileContext.done_callback.callback(storageTask);
+							//fileContext.done_callback.callback(storageTask);
+							StorageService.storage_upload_file_done_callback(storageTask, 0);
 						}
 						
 					}
@@ -168,37 +169,32 @@ public class StorageDioWriteTask extends Thread{
 		//如何确定文件的路径,或者说在哪儿确定文件保存的位置.在生成文件名时就已经确定了存储的路径 storage_path
 		
 		//参考方法 : storage_get_store_path
-		String fileName = new String(fileContext.filename);
-		//System.out.println("write file name : " + fileName);
-		RandomAccessFile randomFile = new RandomAccessFile(fileName, "rw");
+		RandomAccessFile randomFile = new RandomAccessFile(fileContext.fileName, "rw");
 		//设置文件的大小
 		randomFile.setLength(fileContext.end);
 		//File file = new File(new String(fileContext.filename));
 
 		//Notice 读和写都锁嘛?
 		synchronized (lock) {
-			
 			Globle.g_storage_stat.total_file_open_count++;
 			Globle.g_storage_stat.success_file_open_count++;
 		}
 
 
 		fileContext.file = randomFile;
-		if(fileContext.offset > 0){
-			randomFile.seek(fileContext.offset);
-		}
-		/*if (fileContext.offset > 0 && lseek(fileContext.fd,
-			fileContext.offset, SEEK_SET) < 0)
+		if(fileContext.offset > 0)
 		{
-			result = errno != 0 ? errno : EIO;
-			logError("file: "__FILE__", line: %d, " \
-				"lseek file: %s fail, " \
-				"errno: %d, error info: %s", \
-				__LINE__, fileContext.filename, \
-				result, STRERROR(result));
-			return result;
-		}*/
-		return 0;
+			try
+			{
+				randomFile.seek(fileContext.offset);
+			}
+			catch (Exception e)
+			{
+				LogKit.error(String.format("seek file %s fail", fileContext.fileName), StorageDioWriteTask.class);
+				return ProtoCommon.FAIL;
+			}
+		}
+		return ProtoCommon.SUCCESS;
 	}
 	
 	public static void main(String[] args) throws IOException {

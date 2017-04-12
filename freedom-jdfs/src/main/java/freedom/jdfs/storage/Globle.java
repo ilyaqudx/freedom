@@ -2,6 +2,8 @@ package freedom.jdfs.storage;
 
 import java.io.File;
 import java.util.Random;
+
+import freedom.jdfs.protocol.ProtoCommon;
 import static freedom.jdfs.protocol.ProtoCommon.*;
 public class Globle {
 
@@ -39,6 +41,22 @@ public class Globle {
 	public static final byte SUCCESS = 0;
 	public static short g_subdir_count_per_path = 256;
 	public static int g_stat_change_count = 0;
+
+	public static byte[] g_group_name = new byte[ProtoCommon.FDFS_GROUP_NAME_MAX_LEN];//char g_group_name[FDFS_GROUP_NAME_MAX_LEN + 1] = {0};
+
+	public static int g_namespace_len;
+
+	public static byte[] g_key_namespace = new byte[ProtoCommon.FDHT_MAX_NAMESPACE_LEN];
+
+	public static byte g_file_signature_method = ProtoCommon.STORAGE_FILE_SIGNATURE_METHOD_HASH;//STORAGE_FILE_SIGNATURE_METHOD_HAS;
+
+	public static volatile boolean g_continue_flag = true;
+
+	public static String g_fdfs_base_path;//这个为CONF配置的BASE_PATH
+
+	public static int g_binlog_index;
+
+	public static File g_binlog_fd;
 
 	public static int rand() 
 	{

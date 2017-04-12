@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import freedom.jdfs.nio.NioSession;
-import freedom.jdfs.protocol.PacketHeader;
+import freedom.jdfs.protocol.TrackerHeader;
 
 public class Codec {
 
@@ -23,7 +23,7 @@ public class Codec {
 					byte[] body = new byte[(int) pkgLen];
 					buffer.get(body);
 					
-					PacketHeader packet = new PacketHeader(errno, body);
+					TrackerHeader packet = new TrackerHeader(errno, body);
 					return true;
 				}
 			}else

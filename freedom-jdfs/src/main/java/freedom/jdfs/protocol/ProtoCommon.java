@@ -30,13 +30,43 @@ public class ProtoCommon
 		}
 	}
 	
+	public static final byte STORAGE_FILE_SIGNATURE_METHOD_HASH = 1;
+	public static final byte STORAGE_FILE_SIGNATURE_METHOD_MD5  = 2;
+	
+	/**
+	 * FDFH
+	 * */
+	
+	public static final int  FDHT_MAX_NAMESPACE_LEN	  = 64;
+	public static final int  FDHT_MAX_OBJECT_ID_LEN	 = 128;
+	public static final int  FDHT_MAX_SUB_KEY_LEN	 = 128;
+	public static final String  FDHT_FULL_KEY_SEPERATOR = 	"\\x1";//char '\x1'
+
+	public static final int  FDHT_EXPIRES_NEVER	  = 0;  //never timeout
+	public static final int  FDHT_EXPIRES_NONE	  = -1;  //invalid timeout, should ignore
+	
+	public static final int FDFS_MAX_SERVERS_EACH_GROUP = 	32;
+	public static final int FDFS_MAX_GROUPS		        = 512;
+	public static final int FDFS_MAX_TRACKERS		    = 16;
+
+	public static final int FDFS_MAX_META_NAME_LEN		  = 64;
+	public static final int FDFS_MAX_META_VALUE_LEN		 = 256;
+
+	public static final int FDFS_LOGIC_FILE_PATH_LEN	 = 10;
+	public static final int FDFS_TRUE_FILE_PATH_LEN		  = 6;
+
+	public static final int FDFS_ID_TYPE_SERVER_ID     = 1;
+	public static final int FDFS_ID_TYPE_IP_ADDRESS    = 2;
+	
 	public static final int FDFS_FILE_DIST_DEFAULT_ROTATE_COUNT = 100;
 	
 	//the mode of the files distributed to the data path
 	public static final int FDFS_FILE_DIST_PATH_ROUND_ROBIN = 	0 ; //round robin
 	public static final int  FDFS_FILE_DIST_PATH_RANDOM	 = 1;  //random
 	
-	public static final String FDFS_STORAGE_DATA_DIR_FORMAT = "%02x";
+	public static final char  FDFS_STORAGE_STORE_PATH_PREFIX_CHAR    = 'M';
+	public static final String FDFS_STORAGE_DATA_DIR_FORMAT          = "%02X";
+	public static final String FDFS_STORAGE_META_FILE_EXT            = "-m";
 	
 	public static final int g_fdfs_network_timeout = 0x8000;
 	public static final int IOEVENT_TIMEOUT  =  0x8000;
@@ -237,12 +267,12 @@ public class ProtoCommon
 * @param expect_body_len expect response package body length
 * @return RecvPackageInfo: errno and reponse body(byte buff)
 */
-	public static PacketHeader recvPackage(InputStream in, byte expect_cmd, long expect_body_len) throws IOException
+	public static TrackerHeader recvPackage(InputStream in, byte expect_cmd, long expect_body_len) throws IOException
 	{
 		RecvHeaderInfo header = recvHeader(in, expect_cmd, expect_body_len);
 		if (header.errno != 0)
 		{
-			return new PacketHeader(header.errno, null);
+			return new TrackerHeader(header.errno, null);
 		}
 		
 		byte[] body = new byte[(int)header.body_len];
@@ -266,7 +296,7 @@ public class ProtoCommon
 			throw new IOException("recv package size " + totalBytes + " != " + header.body_len);
 		}
 		
-		return new PacketHeader((byte)0, body);
+		return new TrackerHeader((byte)0, body);
 	}
 
 /**
@@ -628,4 +658,7 @@ public class ProtoCommon
  public static final int RAND_MAX = 0x7fff;
 
 public static final int CRC32_XINIT = 0xFFFFFFFF;
+public static final int FAIL = -1;
+public static final int FILE_SIGNATURE_SIZE = 24;
+public static final int SUCCESS = 0;
 }

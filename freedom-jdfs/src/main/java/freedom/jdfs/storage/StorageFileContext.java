@@ -1,6 +1,5 @@
 package freedom.jdfs.storage;
 
-import java.io.File;
 import java.io.RandomAccessFile;
 
 import freedom.jdfs.protocol.ProtoCommon;
@@ -11,7 +10,8 @@ public class StorageFileContext {
 	public byte[] filename = new byte[ProtoCommon.MAX_PATH_SIZE + 128];  	//full filename
 
 	/* FDFS logic filename to log not including group name */
-	public byte[] fname2log = new byte[128+"-m".length()];
+	//public byte[] fname2log = new byte[128+"-m".length()];
+	public String fname2log;
 
 	public byte op;            //w for writing, r for reading, d for deleting etc.
 	public byte sync_flag;     //sync flag log to binlog

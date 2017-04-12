@@ -26,11 +26,12 @@ public class StorageServer {
 
 	public static StorageServer context;
 	public StorageDioService storageDioService;
+	public static StorageConfig storageConfig;
 	public static void main(String[] args) throws Exception
 	{
 		context = new StorageServer();
 		//load config
-		StorageConfig storageConfig = loadConfig();
+		storageConfig = loadConfig();
 		//启动磁盘服务
 		context.storageDioService = new StorageDioService(storageConfig);
 		//storage根目录 

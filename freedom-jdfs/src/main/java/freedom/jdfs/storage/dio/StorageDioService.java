@@ -84,7 +84,13 @@ public class StorageDioService {
 		try {
 			//set clientinfo.stage is 9
 			storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
-			StorageServer.context.storageDioService.addWriteTask(storageTask);
+			if(storageTask.clientInfo.fileContext.op ==ProtoCommon.FDFS_STORAGE_FILE_OP_WRITE)
+				addWriteTask(storageTask);
+			else if(storageTask.clientInfo.fileContext.op == ProtoCommon.FDFS_STORAGE_FILE_OP_READ)
+			{
+				//TODO Notice这儿需要处理一下. read or write flag
+				StorageServer.context.storageDioService.addReadTask(storageTask);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			//TODO add_to_deleted_list(storageTask);

@@ -660,5 +660,5 @@ public class ProtoCommon
 public static final int CRC32_XINIT = 0xFFFFFFFF;
 public static final int FAIL = -1;
 public static final int FILE_SIGNATURE_SIZE = 24;
-public static final int SUCCESS = 0;
+public static final byte SUCCESS = 0;
 }

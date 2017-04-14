@@ -176,8 +176,8 @@ public class UploadFileCommand implements Command {
 			
 			
 			//set clean callback
-			clean_func = dio_write_finish_clean_up(storageTask);
 			fileOffset = 0;
+			clean_func = dio_write_finish_clean_up(storageTask);
 			fileContext.extraInfo.upload.ifGenFileName = true;
 			fileContext.extraInfo.upload.beforeOpenCallback = null;
 			fileContext.extraInfo.upload.beforeCloseCallback = null;

@@ -1,10 +1,13 @@
 package freedom.jdfs.storage;
 
+import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_DIST_DEFAULT_ROTATE_COUNT;
+import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_DIST_PATH_ROUND_ROBIN;
+
 import java.io.File;
+import java.util.Arrays;
 import java.util.Random;
 
 import freedom.jdfs.protocol.ProtoCommon;
-import static freedom.jdfs.protocol.ProtoCommon.*;
 public class Globle {
 
 	public static FDFSStorageStat g_storage_stat = new FDFSStorageStat();
@@ -41,7 +44,7 @@ public class Globle {
 	public static final byte SUCCESS = 0;
 	public static short g_subdir_count_per_path = 256;
 	public static int g_stat_change_count = 0;
-
+	//服务器组名.由配置文件中读取.现保存在STORAGECONFIG中
 	public static String g_group_name ;//= new byte[ProtoCommon.FDFS_GROUP_NAME_MAX_LEN];//char g_group_name[FDFS_GROUP_NAME_MAX_LEN + 1] = {0};
 
 	public static int g_namespace_len;
@@ -147,9 +150,60 @@ public class Globle {
 		}
 	}
 	
-	public static final int CRC32_FINAL(int crc) {
+	public static final int CRC32_FINAL(int crc)
+	{
 		return crc ^ 0xFFFFFFFF;
 	}
+	/**
+	 * 解析C string(以'\0'结尾)
+	 * */
+	public static final String parseCString(byte[] cstr)
+	{
+		if(null == cstr || cstr.length == 0)return null;
+		int index = indexOf(cstr,(byte)'\0');
+		return index == -1 ? new String(cstr) : new String(cstr,0,index);
+	}
+	/**
+	 * 解析C string(以'\0'结尾),指定位置开始查找
+	 * */
+	public static final String parseCString(byte[] cstr,int fromIndex)
+	{
+		if(null == cstr || cstr.length == 0)return null;
+		int index = indexOf(cstr,(byte)'\0',fromIndex);
+		return index == -1 ? new String(cstr) : new String(cstr,fromIndex,index - fromIndex);
+	}
+	/**
+	 * 转换成C string,默认结尾添加'\0'
+	 * */
+	public static final String paddingToCString(String str)
+	{
+		return paddingToCString(str, 1);
+	}
+	/**
+	 * 转换成C string 结尾添加N个'\0'
+	 * */
+	public static final String paddingToCString(String str,int len)
+	{
+		if(str == null || str.length() == 0 || len <= 0)return str;
+		byte[] padding = new byte[len];
+		Arrays.fill(padding, (byte)'\0');
+		return str + new String(padding);
+	}
+
+	public static int indexOf(byte[] arr,byte b)
+	{
+		return indexOf(arr, b, 0);
+	}
+	public static int indexOf(byte[] arr,byte b,int fromIndex)
+	{
+		for (int i = fromIndex; i < arr.length; i++)
+		{
+			if(arr[i] == b)
+				return i;
+		}
+		return -1;
+	}
+	
 	
 	public static void main(String[] args) {
 		

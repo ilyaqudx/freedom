@@ -2,6 +2,7 @@ package freedom.jdfs.nio;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
@@ -11,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.log4j.Logger;
 
 import freedom.jdfs.LogKit;
-import freedom.jdfs.handler.CommandRouter;
+import freedom.jdfs.handler.CommandDispacher;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageServer;
@@ -67,7 +68,7 @@ public class NioProcessor {
 	private void handleNewSession()
 	{
 		if(!newSessions.isEmpty()){
-			//我这犯低级错误.要从列表中删除才行.每次设置为STAGE为8还是要去读,并且TASK中的BUFFER长度为负数等错误
+			//犯低级错误.要从列表中删除才行.每次设置为STAGE为8还是要去读,并且TASK中的BUFFER长度为负数等错误
 			NioSession session = null;
 			while((session = newSessions.poll()) != null){
 				session.registerRead(sel);
@@ -101,17 +102,28 @@ public class NioProcessor {
 
 		private void handleDioCallback() 
 		{
-			if(!completeTaskQueue.isEmpty()){
+			if(!completeTaskQueue.isEmpty())
+			{
 				StorageTask storageTask = null;
-				while((storageTask = completeTaskQueue.poll()) != null){
-					storageTask.offset = 0;
-					storageTask.length = 0;
-					storageTask.data.clear();
-					storageTask.clientInfo.fileContext.buffOffset = 0;
-					storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;
-					storageTask.session.setIntestedRead(true);
-					//1292line why 【Channel : 9 重新注册读事件】task.offset : 262144,task.length = 262144 ,buffer : java.nio.HeapByteBuffer[pos=262144 lim=262144 cap=262144]
-					//LogKit.info("【Channel " +storageTask.session.id+ " 重新注册读事件】task.offset : " +storageTask.offset+ ",task.length = " +storageTask.length+ " ,buffer : " +storageTask.buffer,NioProcessor.class);
+				while((storageTask = completeTaskQueue.poll()) != null)
+				{
+					if(storageTask.clientInfo.stage == StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD){
+						storageTask.offset = 0;
+						storageTask.length = 0;
+						storageTask.data.clear();
+						storageTask.clientInfo.fileContext.buffOffset = 0;
+						storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;
+						storageTask.session.setIntestedRead(true);
+						//1292line why 【Channel : 9 重新注册读事件】task.offset : 262144,task.length = 262144 ,buffer : java.nio.HeapByteBuffer[pos=262144 lim=262144 cap=262144]
+						//LogKit.info("【Channel " +storageTask.session.id+ " 重新注册读事件】task.offset : " +storageTask.offset+ ",task.length = " +storageTask.length+ " ,buffer : " +storageTask.buffer,NioProcessor.class);
+					}
+					else if(storageTask.clientInfo.stage == StorageTask.FDFS_STORAGE_STAGE_NIO_SEND)
+					{
+						//写出数据,数据已放入DATA,此时OFFSET和BUFFER都需要重置
+						storageTask.offset = 0;
+						//storageTask.data.flip();
+						storageTask.session.setIntestedWrite(true);
+					}
 				}
 			}
 		}
@@ -134,7 +146,9 @@ public class NioProcessor {
 
 		private void write(SelectionKey key) 
 		{
-			
+			NioSession session = ((NioSession) key.attachment());
+			session.setIntestedWrite(false);
+			storage_send_add_event(session.task);
 		}
 
 		private void storage_recv_notify_read(SelectionKey key)
@@ -172,7 +186,7 @@ public class NioProcessor {
 		
 		private int storage_send_add_event(StorageTask storageTask)
 		{
-			storageTask.offset = 0;
+			//storageTask.offset = 0;//TODO Notice 不能在这儿设置为0,暂时为了测试下载注释掉,上传这儿取消了肯定有问题.
 
 			/* direct send   event is ?*/ 
 			client_sock_write((short)1,storageTask);
@@ -242,8 +256,10 @@ public class NioProcessor {
 				}
 				else if (bytes == 0)
 				{
-					LogKit.error("send failed, connection disconnected.", NioProcessor.class);
+					LogKit.error("send failed, set write event.", NioProcessor.class);
 					//TODO task_finish_clean_up(pTask);
+					//这儿不能直接断开连接 .应该重新注册WRITE事件
+					storageTask.session.setIntestedWrite(true);
 					return;
 				}
 
@@ -278,12 +294,16 @@ public class NioProcessor {
 						clientInfo.totalOffset = 0;
 						storageTask.offset = 0;
 						storageTask.length = 0;
-
-						clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;
+						storageTask.data.clear();
+						storageTask.session.setIntestedRead(true);
+						clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;//目的应该是要接收客户端的断开信号
+						
 					}
 					else  //continue to send file content
 					{
-						storageTask.length = 0;
+						storageTask.clientInfo.fileContext.buffOffset = 0;
+						storageTask.offset = 0;
+						storageTask.length = (int) Math.min(storageTask.size,clientInfo.fileContext.end - clientInfo.fileContext.offset);
 						/* continue read from file */
 						StorageServer.context.storageDioService.storage_dio_queue_push(storageTask);
 					}
@@ -323,10 +343,6 @@ public class NioProcessor {
 							storageTask.offset;
 					try
 					{
-						if(recv_bytes < 0){
-							System.out.println("我在这儿打个断点 : recv_bytes < 0");
-						}
-						
 						//这儿做个测试,当RECV_BYTES为0时,还有读事件过来,判断 一下是否真的还有数据
 						if(recv_bytes == 0){
 							/*ByteBuffer test  = ByteBuffer.allocate(10);
@@ -340,6 +356,9 @@ public class NioProcessor {
 						buffer.limit(storageTask.data.position() + recv_bytes);
 						
 						int len = session.getChannel().read(storageTask.data);
+						if(len == -1){
+							throw new ClosedChannelException();
+						}
 						if(len == 0){
 							//LogKit.info("【Channel " +session.id+ "】读事件中读取到了数据为0的情况,缓冲区确实没有数据了.跳出循环,下一轮再来读取" + buffer,NioProcessor.class);
 							//这儿读到0的情况是因为一直在死循环中,如果没有读取到完整的BUFFER的大小的数据则会一直读,但是这时候可能缓冲区确实没有数据,所以返回了0
@@ -405,7 +424,7 @@ public class NioProcessor {
 					}
 					catch (IOException e) 
 					{
-						e.printStackTrace();
+						//e.printStackTrace();
 						try {
 							session.getChannel().close();
 						} catch (IOException e1) {
@@ -416,7 +435,7 @@ public class NioProcessor {
 					}
 					catch (Exception e) 
 					{
-						e.printStackTrace();
+						//e.printStackTrace();
 						try {
 							session.getChannel().close();
 						} catch (IOException e1) {
@@ -437,11 +456,10 @@ public class NioProcessor {
 
 		private void storage_deal_task(NioSession session,StorageTask storageTask) 
 		{
-			CommandRouter.route(session, storageTask);
+			CommandDispacher.dispatch(session, storageTask);
 		}
 
-		private void storage_upload_file(NioSession session,
-				StorageTask storageTask, boolean append) 
+		private void storage_upload_file(NioSession session,StorageTask storageTask, boolean append)
 		{
 			
 		}

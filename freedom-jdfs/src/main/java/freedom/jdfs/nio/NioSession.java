@@ -134,6 +134,20 @@ public class NioSession {
         key.interestOps(newInterestOps);
 	}
 	
+	public void setIntestedWrite(boolean intested)
+	{
+        if ((key == null) || !key.isValid()) {
+            return;
+        }
+
+        int newInterestOps = key.interestOps();
+        if(intested)
+        	newInterestOps |= SelectionKey.OP_WRITE;
+        else
+        	newInterestOps &= ~SelectionKey.OP_WRITE;
+        key.interestOps(newInterestOps);
+	}
+	
 	public int getIntested()
 	{
 		return key.interestOps();

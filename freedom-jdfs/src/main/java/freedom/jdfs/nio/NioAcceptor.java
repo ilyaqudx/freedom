@@ -40,8 +40,6 @@ public class NioAcceptor {
 		{
 			Selector sel = Selector.open();
 			ServerSocketChannel channel = ServerSocketChannel.open();
-			channel.setOption(StandardSocketOptions.SO_RCVBUF, 32 * 1024);
-			channel.setOption(StandardSocketOptions.SO_RCVBUF, 32 * 1024);
 			channel.configureBlocking(false);
 			channel.bind(address, backlog);
 			
@@ -86,6 +84,8 @@ public class NioAcceptor {
 		try 
 		{
 			channel = ((ServerSocketChannel)key.channel()).accept();
+			channel.setOption(StandardSocketOptions.SO_RCVBUF, 32 * 1024);
+			channel.setOption(StandardSocketOptions.SO_RCVBUF, 32 * 1024);
 			addNewSession(channel);
 		} 
 		catch (IOException e)

@@ -5,11 +5,14 @@ import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN;
 import static freedom.jdfs.protocol.ProtoCommon.FDFS_STORAGE_DATA_DIR_FORMAT;
 import static freedom.jdfs.storage.StorageSync.STORAGE_OP_TYPE_SOURCE_CREATE_FILE;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 
 import freedom.jdfs.Base64;
+import freedom.jdfs.LogKit;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.protocol.TrackerHeader;
 import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
@@ -87,10 +90,18 @@ public class StorageService {
 					fileContext.end - fileContext.start)*/
 			}
 
+			storageTask.data.clear();
+			int groupLength  = fileContext.extraInfo.upload.groupName.length();
 			int filename_len = fileContext.fname2Log.length();
 			clientInfo.totalLength = ProtoCommon.HEADER_LENGTH + ProtoCommon.FDFS_GROUP_NAME_MAX_LEN + filename_len;
 			storageTask.data.position(ProtoCommon.HEADER_LENGTH);
-			storageTask.data.put(fileContext.extraInfo.upload.groupName.getBytes());//FDFS_GROUP_NAME_MAX_LEN
+			storageTask.data.put(fileContext.extraInfo.upload.groupName.getBytes());//FDFS_GROUP_NAME_MAX_LEN,默认为16字节,必须对齐
+			if(groupLength < ProtoCommon.FDFS_GROUP_NAME_MAX_LEN)
+			{
+				for (int i = 0; i < ProtoCommon.FDFS_GROUP_NAME_MAX_LEN - groupLength; i++) {
+					storageTask.data.put((byte) '\0');
+				}
+			}
 			storageTask.data.put(fileContext.fname2Log.getBytes());
 		}
 		else
@@ -109,13 +120,16 @@ public class StorageService {
 		//TODO Continue
 		//STORAGE_ACCESS_LOG(pTask, ACCESS_LOG_ACTION_UPLOAD_FILE, result);
 
+		storageTask.offset = 0;
 		clientInfo.totalOffset = 0;
+		clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_SEND;
 		storageTask.length = (int) clientInfo.totalLength;
-
 		storageTask.data.position(0);
-		storageTask.data.put((byte)result);
-		storageTask.data.put(ProtoCommon.STORAGE_PROTO_CMD_RESP);
 		storageTask.data.putLong(clientInfo.totalLength - ProtoCommon.HEADER_LENGTH);
+		storageTask.data.put(ProtoCommon.STORAGE_PROTO_CMD_RESP);
+		storageTask.data.put((byte)result);
+		storageTask.data.position(0);
+		storageTask.data.limit((int)clientInfo.totalLength);//这儿要判断是否超过256K
 		storage_nio_notify(storageTask);
 	}
 
@@ -191,7 +205,7 @@ public class StorageService {
 		}
 		
 		//下一步DEBUG到了这儿
-		fileContext.extraInfo.upload.groupName = Globle.g_group_name;
+		fileContext.extraInfo.upload.groupName = StorageServer.storageConfig.getGroup_name();//Globle.g_group_name;
 		String format = "%c" + ProtoCommon.FDFS_STORAGE_DATA_DIR_FORMAT + "/%s";
 		new_fname2log = String.format(format, 
 				ProtoCommon.FDFS_STORAGE_STORE_PATH_PREFIX_CHAR, 
@@ -212,13 +226,8 @@ public class StorageService {
 		}
 		else if (rename(fileContext.fileName, new_full_filename) != 0)
 		{
-			/*logError("file: "__FILE__", line: %d, " 
-				"rename %s to %s fail, " 
-				"errno: %d, error info: %s", __LINE__, 
-				pFileContext.filename, new_full_filename, 
-				result, STRERROR(result));
-
-			unlink(pFileContext.filename);*/
+			removeFile(fileContext.fileName);
+			LogKit.error(String.format("rename %s to %s fail", fileContext.fileName,new_full_filename), StorageService.class);
 			return ProtoCommon.FAIL;
 		}
 
@@ -523,9 +532,14 @@ public class StorageService {
 		}
 	}
 
-	private static int rename(String fileName, String newFullFileName) {
-		// TODO Auto-generated method stub
-		return 0;
+	/**
+	 * 更改上传的文件名
+	 * */
+	private static int rename(String fileName, String newFullFileName) 
+	{
+		if(!new File(fileName).renameTo(new File(newFullFileName)))
+			return ProtoCommon.FAIL;
+		return ProtoCommon.SUCCESS;
 	}
 
 	private static void storage_delete_file_auto(StorageFileContext pFileContext) {
@@ -586,8 +600,8 @@ public class StorageService {
 		//base64_encode_ex(g_fdfs_base64_context, buff, 4 * 5, encoded,filename_len, false);
 		String encodeString = new sun.misc.BASE64Encoder().encode(buffer.array());
 		//检查文件名是否有\
-		//encodeString = encodeString.replace("\\", "Z");
-		//encodeString = encodeString.replace("/", "Z");
+		encodeString = encodeString.replace("\\", "Z");
+		encodeString = encodeString.replace("/", "Z");
 		byte[] encoded = encodeString.getBytes();
 		
 		
@@ -669,6 +683,10 @@ public class StorageService {
 	private boolean storage_check_reserved_space_path(int total_mb, long l,
 			int g_avg_storage_reserved_mb) {		// TODO Auto-generated method stub
 		return false;
+	}
+	
+	private static final void removeFile(String file){
+		new File(file).delete();
 	}
 	
 

@@ -8,5 +8,6 @@ public class TestStringFormat {
 		
 		System.out.println(String.format(format, 10));
 		
+		System.out.println(9 | 2);
 	}
 }

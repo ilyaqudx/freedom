@@ -32,12 +32,12 @@ public class StorageServer {
 		context = new StorageServer();
 		//load config
 		storageConfig = loadConfig();
-		//启动磁盘服务
-		context.storageDioService = new StorageDioService(storageConfig);
 		//storage根目录 
 		String basePath = storageConfig.getBase_path();
 		//检查data目录是否存在,如果不存在则创建storage path
 		storage_check_and_make_data_dirs(storageConfig,basePath);
+		//启动磁盘服务
+		context.storageDioService = new StorageDioService(storageConfig);
 		//启动网络监听
 		new NioAcceptor(new InetSocketAddress(storageConfig.getPort())).start();
 	}

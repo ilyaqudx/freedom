@@ -53,19 +53,32 @@ public class StorageDioService {
 		writeTask.start();
 	}
 	
+	
+	/**
+	 * 添加写任务
+	 * */
 	public void addWriteTask(StorageTask task)
 	{
-		if(task == null){
+		if(task == null)
+		{
 			LogKit.error("add write task is null", this.getClass());
-		}else{
-			try {
+		}
+		else
+		{
+			try
+			{
 				writeQueue.put(task);
-			} catch (InterruptedException e) {
+			} 
+			catch (InterruptedException e)
+			{
 				e.printStackTrace();
 			}
 		}
 	}
 	
+	/**
+	 * 添加读任务
+	 * */
 	public void addReadTask(StorageTask task)
 	{
 		if(task == null){
@@ -79,21 +92,20 @@ public class StorageDioService {
 		}
 	}
 
+	/**
+	 * 将任务放入磁盘队列中
+	 * */
 	public int storage_dio_queue_push(StorageTask storageTask) 
 	{
 		try {
-			//set clientinfo.stage is 9
-			storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
 			if(storageTask.clientInfo.fileContext.op ==ProtoCommon.FDFS_STORAGE_FILE_OP_WRITE)
 				addWriteTask(storageTask);
 			else if(storageTask.clientInfo.fileContext.op == ProtoCommon.FDFS_STORAGE_FILE_OP_READ)
-			{
-				//TODO Notice这儿需要处理一下. read or write flag
 				StorageServer.context.storageDioService.addReadTask(storageTask);
-			}
-		} catch (Exception e) {
+		}
+		catch (Exception e)
+		{
 			e.printStackTrace();
-			//TODO add_to_deleted_list(storageTask);
 		}
 	
 		return ProtoCommon.SUCCESS;

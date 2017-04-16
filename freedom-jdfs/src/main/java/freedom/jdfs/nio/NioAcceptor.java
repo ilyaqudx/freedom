@@ -36,21 +36,12 @@ public class NioAcceptor {
 				throw new Exception("服务器正在启动中");
 			running = true;
 		}
-		try
-		{
-			Selector sel = Selector.open();
-			ServerSocketChannel channel = ServerSocketChannel.open();
-			channel.configureBlocking(false);
-			channel.bind(address, backlog);
-			
-			channel.register(sel, SelectionKey.OP_ACCEPT);
-			
-			startup(sel);
-		} 
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+		Selector sel = Selector.open();
+		ServerSocketChannel channel = ServerSocketChannel.open();
+		channel.configureBlocking(false);
+		channel.bind(address, backlog);
+		channel.register(sel, SelectionKey.OP_ACCEPT);
+		startup(sel);
 	}
 
 	private void startup(Selector sel) throws Exception 
@@ -90,17 +81,20 @@ public class NioAcceptor {
 		} 
 		catch (IOException e)
 		{
-			e.printStackTrace();
 			try
 			{
-				channel.close();
+				if(channel != null)
+				{
+					channel.close();
+				}
 			}
 			catch (IOException ex) 
 			{
 				ex.printStackTrace();
 			}
 		}
-		catch (Exception e) {
+		catch (Exception e)
+		{
 			e.printStackTrace();
 		}
 	}
@@ -126,13 +120,6 @@ public class NioAcceptor {
 	{
 		NioSession session = newSession(channel);
 		NioProcessor processor = getProcessor(session);
-		//这儿又是自己把自己坑了
-		//先绑定session再添加到nio,后放时经常出现STORAGETASK中的SIZE为0的情况,导致LENGTH也为0.UNDER_BUFFER_EXCEPTION,
-		//这儿其实就是内存可见性导致的问题.session task is not null .but task size is 0.
-		//试验一下.将task size set final 解决了SIZE为0的问题
-		//试验2:将task size set volatile能否解决SIZE为0的问题?我觉得是可以的,但事实是不行的.
-		//本身这儿的逻辑就应该先绑定TASK再放入NIO线程去处理.避免这种并发引起的数据问题.
-		//这是一个很好的例子.并发的经验发生了内存可见性问题
 		bindStorageTask(session);
 		processor.addNewSession(session);
 		return session;
@@ -141,8 +128,7 @@ public class NioAcceptor {
 	private void bindStorageTask(NioSession session) throws IOException
 	{
 		session.task = StorageTaskPool.I.obtain();
-		session.task.clientIp = ((InetSocketAddress)session.getChannel().getRemoteAddress())
-				.getHostName();
+		session.task.clientIp = ((InetSocketAddress)session.getChannel().getRemoteAddress()).getHostName();
 		session.task.session = session;
 	}
 }

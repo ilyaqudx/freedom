@@ -51,4 +51,6 @@ question:
 		start : 整个文件的开始字节
 		end   : 整个文件的结束字节
 		offset: 整个文件的偏移量(在写入时进行seek的偏移量)
+		
+2017-04-14  对NIOPROCESSOR 的SOCKET读取和数据的解码进行重构
 	

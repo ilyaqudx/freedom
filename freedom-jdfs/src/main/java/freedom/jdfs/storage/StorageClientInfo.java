@@ -20,4 +20,20 @@ public class StorageClientInfo {
 	public byte[] extraArg;   //store extra arg, such as (BinLogReader *)
 	public DisconnectCleanFunc cleanFunc;  //clean function pointer when finished
 	public StorageFileContext fileContext = new StorageFileContext();
+	
+	
+
+	
+	/**
+	 * 当前整个客户端请求是否已全部处理完成
+	 * */
+	public boolean isCompleteAll()
+	{
+		return totalOffset > 0 && totalOffset >= totalLength;
+	}
+	
+	public long remaining()
+	{
+		return totalLength - totalOffset;
+	}
 }

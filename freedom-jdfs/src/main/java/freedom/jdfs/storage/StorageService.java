@@ -9,12 +9,10 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 
 import freedom.jdfs.Base64;
 import freedom.jdfs.LogKit;
 import freedom.jdfs.protocol.ProtoCommon;
-import freedom.jdfs.protocol.TrackerHeader;
 import freedom.jdfs.storage.trunk.FDFSTrunkFullInfo;
 public class StorageService {
 
@@ -34,12 +32,14 @@ public class StorageService {
 		
 	}
 	
+	/**文件上传完成回调接口
+	 * @param storageTask	请求任务
+	 * @param errno			状态码
+	 */
 	public static final void storage_upload_file_done_callback(StorageTask storageTask,int errno)
 	{
-
 		StorageClientInfo clientInfo = storageTask.clientInfo;
 		StorageFileContext fileContext = clientInfo.fileContext;
-		TrackerHeader pHeader;
 		int result = errno;
 
 		/*
@@ -194,10 +194,9 @@ public class StorageService {
 		//生成文件名
 		try 
 		{
-			FileEntity fileEntity = storage_get_filename(clientInfo, end_time,file_size_in_name, fileContext.crc32,
-					fileContext.extraInfo.upload.formattedExtName);
-			new_full_filename = fileEntity.getAbsolutePathName();
-			new_filename = fileEntity.getFileName();
+			 new_filename = StorageService.storage_get_unique_filename(clientInfo, end_time, file_size_in_name, fileContext.crc32, fileContext.extraInfo.upload.formattedExtName);
+			
+			 new_full_filename =  StorageService.storage_get_full_filename(clientInfo.fileContext.extraInfo.upload.trunkInfo.path.storePathIndex, new_filename);
 			
 		} catch (Exception e) {
 			storage_delete_file_auto(fileContext);
@@ -517,7 +516,7 @@ public class StorageService {
 		return ProtoCommon.SUCCESS;
 }
 	
-	private static void STORAGE_GEN_FILE_SIGNATURE(long file_size,int[] hash_codes, byte[] sig_buff) {
+	private static void storage_gen_file_signature(long file_size,int[] hash_codes, byte[] sig_buff) {
 		Globle.long2buff(file_size, sig_buff); 
 		if (Globle.g_file_signature_method == ProtoCommon.STORAGE_FILE_SIGNATURE_METHOD_HASH) 
 		{
@@ -548,28 +547,54 @@ public class StorageService {
 	}
 
 	/**
-	 * Notice
+	 * 得到唯一的文件名
 	 * */
-	public static final FileEntity storage_get_filename(StorageClientInfo clientInfo,
+	public static final String storage_get_unique_filename(StorageClientInfo clientInfo,
 			long start_time, long file_size, int crc32,
-			String formattedExtName) 
+			String formattedExtName)
 	{
-		String fileName = null;
-		String fullFileName = null;
+		String uniqueFilename = null;
+		String uniqueFullFileName = null;
 		int store_path_index = clientInfo.fileContext.extraInfo.upload.trunkInfo.path.storePathIndex;
 		for (int i = 0; i < 10; i++)
 		{
-			fileName =storage_gen_filename(clientInfo, file_size, 
-				crc32, formattedExtName,start_time);
-			
-			fullFileName = String.format("%s/data/%s", Globle.g_fdfs_store_paths.paths[store_path_index], fileName);
-			if (!Globle.existFile(fullFileName))
+			uniqueFilename =storage_gen_filename(clientInfo, file_size,crc32, formattedExtName,start_time);
+			uniqueFullFileName = storage_get_full_filename(store_path_index, uniqueFilename);
+			if (!Globle.existFile(uniqueFullFileName))
 			{
 				break;
 			}
 		}
-		return new FileEntity(fileName,fullFileName);
-
+		return uniqueFilename;
+	}
+	/**
+	 * 获取唯一的文件全路径名
+	 * */
+	public static final String storage_get_unique_full_filename(StorageClientInfo clientInfo,
+			long start_time, long file_size, int crc32,
+			String formattedExtName)
+	{
+		String uniqueFilename = null;
+		String uniqueFullFileName = null;
+		int store_path_index = clientInfo.fileContext.extraInfo.upload.trunkInfo.path.storePathIndex;
+		for (int i = 0; i < 10; i++)
+		{
+			uniqueFilename =storage_gen_filename(clientInfo, file_size,crc32, formattedExtName,start_time);
+			uniqueFullFileName = storage_get_full_filename(store_path_index, uniqueFilename);
+			if (!Globle.existFile(uniqueFullFileName))
+			{
+				break;
+			}
+		}
+		return uniqueFullFileName;
+	}
+	
+	/**
+	 * 获取文件全路径名
+	 * */
+	public static final String storage_get_full_filename(int store_path_index,String filename)
+	{
+		return String.format("%s/data/%s", Globle.g_fdfs_store_paths.paths[store_path_index], filename);
 	}
 
 	public static void main(String[] args) throws ParseException {
@@ -586,7 +611,6 @@ public class StorageService {
 			long file_size, int crc32, String formattedExt,long timestamp)
 	{
 		int timestampsec = (int) (timestamp / 1000);
-		//byte[] encoded = new byte[33];
 		long masked_file_size  = ((file_size >> 32) == 0 ? Globle.COMBINE_RAND_FILE_SIZE(file_size) : file_size);
 		
 		ByteBuffer buffer = ByteBuffer.allocate(20);
@@ -681,7 +705,8 @@ public class StorageService {
 	}
 
 	private boolean storage_check_reserved_space_path(int total_mb, long l,
-			int g_avg_storage_reserved_mb) {		// TODO Auto-generated method stub
+			int g_avg_storage_reserved_mb) {
+		// TODO Auto-generated method stub
 		return false;
 	}
 	

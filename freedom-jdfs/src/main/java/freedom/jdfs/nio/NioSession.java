@@ -119,33 +119,33 @@ public class NioSession {
 		}
 	}
 	
-	//注册/取消读事件
-	public void setIntestedRead(boolean intested)
+	private void interestOpt(int opt,boolean intested)
 	{
-        if ((key == null) || !key.isValid()) {
-            return;
-        }
+		 if ((key == null) || !key.isValid()) {
+	            return;
+	     }
 
-        int newInterestOps = key.interestOps();
-        if(intested)
-        	newInterestOps |= SelectionKey.OP_READ;
-        else
-        	newInterestOps &= ~SelectionKey.OP_READ;
-        key.interestOps(newInterestOps);
+	        int newInterestOps = key.interestOps();
+	        if(intested)
+	        	newInterestOps |= opt;
+	        else
+	        	newInterestOps &= ~opt;
+	        key.interestOps(newInterestOps);
 	}
 	
+	/**
+	 * 注册/取消-读通知
+	 * */
+	public void setIntestedRead(boolean intested)
+	{
+		interestOpt(SelectionKey.OP_READ, intested);
+	}
+	/**
+	 * 注册/取消-写通知
+	 * */
 	public void setIntestedWrite(boolean intested)
 	{
-        if ((key == null) || !key.isValid()) {
-            return;
-        }
-
-        int newInterestOps = key.interestOps();
-        if(intested)
-        	newInterestOps |= SelectionKey.OP_WRITE;
-        else
-        	newInterestOps &= ~SelectionKey.OP_WRITE;
-        key.interestOps(newInterestOps);
+		interestOpt(SelectionKey.OP_WRITE, intested);
 	}
 	
 	public int getIntested()

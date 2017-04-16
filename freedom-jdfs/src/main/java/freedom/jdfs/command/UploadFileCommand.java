@@ -14,7 +14,6 @@ import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
 import freedom.jdfs.storage.StorageServer;
 import freedom.jdfs.storage.StorageService;
-import freedom.jdfs.storage.StorageService.FileEntity;
 import freedom.jdfs.storage.StorageTask;
 import freedom.jdfs.storage.StorageTaskPool;
 import freedom.jdfs.storage.TaskDealFunc;
@@ -27,17 +26,16 @@ public class UploadFileCommand implements Command {
 	@Override
 	public int execute(NioSession session, StorageTask storageTask) 
 	{
-		StorageClientInfo clientInfo = storageTask.clientInfo;
-		StorageFileContext fileContext = clientInfo.fileContext;
-		DisconnectCleanFunc clean_func;
-		String fileExtName ;//= new byte[7];
+		int result = 0 , crc32 = 0;
 		long packetLen;//包体长度
 		long fileOffset;
 		long fileBytes;
-		int crc32;
+		String fileExtName;
 		int storePathIndex = 0;
-		int result;
-		//包体长度
+		DisconnectCleanFunc clean_func;
+		StorageClientInfo  clientInfo  = storageTask.clientInfo;
+		StorageFileContext fileContext = clientInfo.fileContext;
+		//实体数据长度
 		packetLen = clientInfo.totalLength - ProtoCommon.HEADER_LENGTH;
 
 		if (packetLen < 1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
@@ -50,18 +48,10 @@ public class UploadFileCommand implements Command {
 			return ProtoCommon.EINVAL;
 		}
 
-		storageTask.data.position(10);
+		//跳过头部信息
+		storageTask.data.position(ProtoCommon.HEADER_LENGTH);
 		//头部后第一个字节:存储路径索引
-		try {
-			//这儿居然storageTask.length = 0,整个BUFFER只接收了10个字节.
-			//查看了size也为0.那么应该是SIZE也为0导致 了.因为在前面赋值时,如果整个请求大于了SIZE的大小则用了SIZE的大小赋值给了LENGTH
-			//居然session是空的
-			storePathIndex = storageTask.data.get();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+		storePathIndex = storageTask.data.get();
 		if (storePathIndex == -1)
 		{
 			if ((result = StorageService.storage_get_storage_path_index(storePathIndex)) != 0)
@@ -84,11 +74,10 @@ public class UploadFileCommand implements Command {
 			LogKit.error(String.format("pkg length is not correct,invalid file bytes: %ld, total body length: %ld",fileBytes, packetLen),this.getClass());
 			return ProtoCommon.EINVAL;
 		}
+		//获取扩展名
 		byte[] fileExtNameBuffer = new byte[6];
 		storageTask.data.get(fileExtNameBuffer,0,6);
 		fileExtName = new String(fileExtNameBuffer);
-		//将第7字节设置为'\0' end
-		//fileExtName[ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN] = '\0';
 		//validate file name
 		if ((result = StorageService.fdfs_validate_filename(fileExtName)) != 0)
 		{
@@ -147,9 +136,9 @@ public class UploadFileCommand implements Command {
 		}
 		else*/
 		{
-			byte[] reserved_space_str = new byte[32];
+			/*byte[] reserved_space_str = new byte[32];
 			//TODO disk space alloc logic
-			/*
+			
 			 * TODO Continue
 			 * if (!storage_check_reserved_space_path(Globle.g_path_space_list 
 				[store_path_index].total_mb, Globle.g_path_space_list 
@@ -169,12 +158,9 @@ public class UploadFileCommand implements Command {
 			crc32 = Globle.rand();
 			fileContext.extraInfo.upload.ifSubPathAlloced = false;
 			//generate store file name
-			FileEntity fileEntity= StorageService.storage_get_filename(clientInfo, 
+			fileContext.fileName = StorageService.storage_get_unique_full_filename(clientInfo, 
 					fileContext.extraInfo.upload.startTime, 
 					fileBytes, crc32, fileContext.extraInfo.upload.formattedExtName);
-			fileContext.fileName = fileEntity.getAbsolutePathName();
-			
-			
 			//set clean callback
 			fileOffset = 0;
 			clean_func = dio_write_finish_clean_up(storageTask);

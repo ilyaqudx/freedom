@@ -39,7 +39,8 @@ public class StorageDioReadTask extends Thread {
 				if(len != expect){
 					LogKit.error(String.format("read bytes error,expect %d,actual %d",expect,len), StorageDioReadTask.class);
 				}else{
-					storageTask.data.position(storageTask.offset);
+					//storageTask.data.position(storageTask.offset);
+					storageTask.data.position(0);
 					fileContext.offset += len;
 					clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_SEND;
 					if(fileContext.offset >= fileContext.end){

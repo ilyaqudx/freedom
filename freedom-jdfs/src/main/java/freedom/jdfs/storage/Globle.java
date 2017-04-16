@@ -4,9 +4,11 @@ import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_DIST_DEFAULT_ROTATE_CO
 import static freedom.jdfs.protocol.ProtoCommon.FDFS_FILE_DIST_PATH_ROUND_ROBIN;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
+import freedom.jdfs.LogKit;
 import freedom.jdfs.protocol.ProtoCommon;
 public class Globle {
 
@@ -202,6 +204,23 @@ public class Globle {
 				return i;
 		}
 		return -1;
+	}
+	
+	public static final void fill(ByteBuffer buffer,byte b,int len) throws Exception
+	{
+		check(null != buffer && buffer.hasRemaining(), "fill error!buffer is blank");
+		check(len > 0, "fill error! len < 0 ");
+		for (int i = 0; i < len; i++) {
+			buffer.put(b);
+		}
+	}
+	
+	public static final void check(boolean express,String msg) throws Exception
+	{
+		if(!express){
+			LogKit.error(msg, Globle.class);
+			throw new Exception(msg);
+		}
 	}
 	
 	

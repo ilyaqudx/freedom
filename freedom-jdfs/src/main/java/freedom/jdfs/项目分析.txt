@@ -1,0 +1,58 @@
+
+
+文件上传步骤
+
+用户选择文件上传
+
+服务器接收到请求
+	服务器将CHANNEL封闭成SESSION，获取一个StorageTask.放入NIOPROSSOR处理队列中
+		名字分析(服务器-StorageServer,Session,NioProcessor,StorageTask,NewSessionQueue)
+服务器接收文件
+	接收请求的数据，解析请求请求头(第一次接收数据的情况)
+		由谁来接收请求数据(NioProcessor)
+		由谁来解析请求数据(ProtocolCodec)
+	Task数据接受完成(单次TASK的容量最大为256K，如果大于256K则分多次接收)
+		StorageTask : 存储请求的数据
+		ClientInfo  : 记录请求的数据属性(请求的总长度,当前总共读取了多少)
+		FileContext : 记录磁盘对数据的操作情况(文件长度,已写入多少)
+	将TASK放入磁盘写队列中，等待写入
+服务器将接收的文件写入磁盘
+	取出需要写入磁盘的Task
+	首次为Task为配需要占用的磁盘空间
+	将Task中的数据写入磁盘(首次写入的长度应该减去头部和包体非文件数据)
+	写入完成后由StorageTaskService处理后续的工作
+	将StorageTask重新放入NIO队列继续处理
+接收完成返回客户端组名和文件名
+	全部处理完成则进行后续处理
+上传完成
+
+
+分析出现异常情况
+	Acceptor接收SocketChannel后分配StorageTask失败(服务器繁忙异常,记录日志,关闭SESSION)
+	NIO处理新连接注册到SELECTOR时异常(IOException：记录日志、关闭SESSION，清理并回收StorageTask)
+	读取数据时IOException(IOException：记录日志、关闭SESSION，清理并回收StorageTask)
+	读取数据长度为-1(IOException：客户端主动关闭连接可以不记录日志.关闭SESSION，清理并回收StorageTask)
+	读取数据解析到的包体长度不大于0(ProtocolParseException,关闭SESSION,清理并回收StorageTask,返回客户端请求数据不合法)
+	处理命令时出现异常(逻辑异常,通常是因为代码有问题导致的,关闭SESSION，清理并回收TASK)
+	写出数据时IOException(连接可能已断开,关闭SESSION,清理并回收TASK)
+	
+	磁盘空间不足异常	(记录日志,关闭SESSION，清理并回收TASK，返回客户端错误信息,与客户端配置重新请求服务器)
+	磁盘处理完成后放入NIO队列失败
+	磁盘处理全部完成后后续处理失败
+	文件重命名失败
+异常后的清理工作
+	关闭Channel
+	StorageTask重置后并进行回收(包括ClientInfo,FileContext数据清理)
+	异常信息的记录
+
+异常如何进行传递和在哪一层进行真正处理
+	出现异常位置进行异常的初始化并抛向上一级
+	顶点进行异常的处理和日志的记录
+	
+异常类型
+	ProtocolParseException
+	DiskOperatorException
+	SocketOperatorException
+	SystemException
+	
+	

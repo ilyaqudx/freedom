@@ -39,6 +39,16 @@ public class StorageFileContext {
 
 	public long tvDealStart; //task deal start tv for access log
 	
+	public boolean hasRemaining()
+	{
+		return end > offset;
+	}
+	
+	public long remaining()
+	{
+		return end - offset;
+	}
+	
 	public class ExtraInfoUnion{
 		public StorageUploadInfo upload = new StorageUploadInfo();//c 中的union  中的元素  extra_info
 		public StorageSetMetaInfo setmeta = new StorageSetMetaInfo();//c 中的union  中的元素  extra_info

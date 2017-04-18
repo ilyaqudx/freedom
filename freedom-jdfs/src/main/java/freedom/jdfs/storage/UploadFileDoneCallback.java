@@ -1,5 +1,6 @@
 package freedom.jdfs.storage;
 
+import java.io.IOException;
 import java.util.zip.CRC32;
 
 import freedom.jdfs.LogKit;
@@ -10,6 +11,8 @@ import freedom.jdfs.storage.dio.StorageDioWriteTask;
  * */
 public class UploadFileDoneCallback implements StorageTaskCallback {
 
+	private Object lock = new Object();
+	
 	@Override
 	public void complete(StorageTask storageTask)
 	{
@@ -44,15 +47,17 @@ public class UploadFileDoneCallback implements StorageTaskCallback {
 			}
 		}*/
 		//记录整个文件的写入偏移量
-		fileContext.offset += (storageTask.length - fileContext.buffOffset);
-		if (fileContext.offset < fileContext.end)
+		fileContext.offset += storageTask.data.limit();
+		if (fileContext.hasRemaining())
 		{
 			storageTask.offset = 0;
 			storageTask.length = 0;
+			storageTask.state = StorageTask.STATE_NIO_READ;
 			storageTask.data.clear();
+			storageTask.data.limit(Math.min(storageTask.size,(int) fileContext.remaining()));
 			storageTask.clientInfo.fileContext.buffOffset = 0;
 			storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_NIO_RECV;
-			storage_nio_notify(storageTask);  //notify nio to deal
+			StorageService.storage_nio_notify(storageTask);  //notify nio to deal
 		}
 		else
 		{
@@ -84,8 +89,15 @@ public class UploadFileDoneCallback implements StorageTaskCallback {
 			}*/
 
 			/* file write done, close it */
-			fileContext.file.close();
-			fileContext.file = null;
+			if(fileContext.file != null){
+				try {
+					fileContext.file.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				fileContext.file = null;
+			}
 
 			/*
 			 * TODO Continue

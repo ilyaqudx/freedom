@@ -8,7 +8,7 @@ public class UploadFilePacket extends Packet {
 	private String 	fileExtName;//6
 	private long 	fileLength;//8
 	
-	public UploadFilePacket(byte storePathIndex,String fileExtName, long fileLength)
+	public UploadFilePacket(byte storePathIndex, long fileLength,String fileExtName)
 	{
 		this.storePathIndex = storePathIndex;
 		this.fileExtName    = fileExtName;

@@ -11,7 +11,6 @@ import freedom.jdfs.command.UploadFileCommand;
 import freedom.jdfs.common.Header;
 import freedom.jdfs.common.Packet;
 import freedom.jdfs.common.Request;
-import freedom.jdfs.exception.ProtocolParseException;
 import freedom.jdfs.nio.NioSession;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.StorageClientInfo;
@@ -30,7 +29,7 @@ public class MessageHandler {
 		commands.put(ProtoCommon.STORAGE_PROTO_CMD_DOWNLOAD_FILE, new DownloadFileCommand());
 	}
 
-	public static void handleRequest(NioSession session, Request request,StorageTask storageTask) throws ProtocolParseException {
+	public static void handleRequest(NioSession session, Request request,StorageTask storageTask) throws Exception {
 		StorageClientInfo clientInfo = storageTask.clientInfo;
 		//请求头
 		Header header = request.getHeader();
@@ -41,15 +40,13 @@ public class MessageHandler {
 		//已接收的数据长度
 		clientInfo.totalOffset += receviedLength;
 		//还剩余的数据由StorageTask重新接收
-		storageTask.length = (int) Math.min(header.getBodyLength() - receviedLength,storageTask.size);
+		//storageTask.length = (int) Math.min(header.getBodyLength() - receviedLength,storageTask.size);
 		//查询请求处理接口
 		Command<? extends Packet> command = commands.get(request.getHeader().getCmd());
 		if(command == null)
 			LOGGER.error(String.format("cmd is not found : %d", request.getHeader().getCmd()));
 		else
 			command.execute(session, storageTask, request);
-		//清除IoBuffer的数据
-		storageTask.data.clear();
 	}
 	
 	/**

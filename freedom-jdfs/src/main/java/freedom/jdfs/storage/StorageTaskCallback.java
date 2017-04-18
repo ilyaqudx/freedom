@@ -8,8 +8,9 @@ public interface StorageTaskCallback {
 	
 	/**
 	 * 完成
+	 * @throws Exception 
 	 * */
-	public void complete(StorageTask storageTask);
+	public void complete(StorageTask storageTask) ;
 	/**
 	 * 异常
 	 * */

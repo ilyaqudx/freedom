@@ -10,11 +10,11 @@ public abstract class AbstractCommand<P extends Packet> implements Command<P> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public int execute(NioSession session , StorageTask storageTask,Request request) 
+	public int execute(NioSession session , StorageTask storageTask,Request request) throws Exception 
 	{
 		return doCommand(session,storageTask, (P)request.getPacket());
 	}
 	
-	protected abstract int doCommand(NioSession session,StorageTask storageTask,P packet);
+	protected abstract int doCommand(NioSession session,StorageTask storageTask,P packet) throws Exception;
 
 }

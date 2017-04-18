@@ -10,6 +10,7 @@ import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.Globle;
 import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
+import freedom.jdfs.storage.StorageService;
 import freedom.jdfs.storage.StorageTask;
 
 public class StorageDioReadTask extends Thread {
@@ -49,9 +50,9 @@ public class StorageDioReadTask extends Thread {
 						fileContext.file.close();
 						fileContext.file = null;
 						//read success
-						storage_nio_notify(storageTask);
+						StorageService.storage_nio_notify(storageTask);
 					}else{
-						storage_nio_notify(storageTask);
+						StorageService.storage_nio_notify(storageTask);
 					}
 				}
 				
@@ -62,17 +63,6 @@ public class StorageDioReadTask extends Thread {
 		}
 	}
 	
-	/**
-	 * 通知NIO线程已完成本次写盘任务
-	 * 
-	 * 
-	 * 将该任务添加到NIO线程的完成任务队列中
-	 * */
-	private void storage_nio_notify(StorageTask storageTask)
-	{
-		storageTask.session.getProcessor().complete(storageTask);
-	}
-
 	private Object lock = new Object();
 	
 	/**

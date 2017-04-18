@@ -5,6 +5,7 @@ import static freedom.jdfs.protocol.ProtoCommon.CRC32_XINIT;
 import java.util.Arrays;
 
 import freedom.jdfs.LogKit;
+import freedom.jdfs.exception.ProtocolParseException;
 import freedom.jdfs.nio.NioSession;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.protocol.UploadFilePacket;
@@ -13,88 +14,56 @@ import freedom.jdfs.storage.FileDealDoneCallback;
 import freedom.jdfs.storage.Globle;
 import freedom.jdfs.storage.StorageClientInfo;
 import freedom.jdfs.storage.StorageFileContext;
+import freedom.jdfs.storage.StorageFileContext.StorageUploadInfo;
 import freedom.jdfs.storage.StorageServer;
 import freedom.jdfs.storage.StorageService;
 import freedom.jdfs.storage.StorageTask;
 import freedom.jdfs.storage.StorageTaskPool;
 import freedom.jdfs.storage.TaskDealFunc;
+import freedom.jdfs.storage.UploadFileDoneCallback;
 
+/**
+ * @author Administrator
+ *
+ */
 public class UploadFileCommand extends AbstractCommand<UploadFilePacket> {
 
 	private static final int STORAGE_STATUE_DEAL_FILE = 123456;
 
 	@Override
-	protected int doCommand(NioSession session, StorageTask storageTask,UploadFilePacket packet)
+	protected int doCommand(NioSession session, StorageTask storageTask,UploadFilePacket packet) throws Exception
 	{
-		int result = 0 , crc32 = 0;
-		long packetLen;//包体长度
-		long fileOffset;
-		long fileBytes;
-		String fileExtName;
-		int storePathIndex = 0;
-		DisconnectCleanFunc clean_func;
-		StorageClientInfo  clientInfo  = storageTask.clientInfo;
-		StorageFileContext fileContext = clientInfo.fileContext;
-		//实体数据长度
-		packetLen = clientInfo.totalLength - ProtoCommon.HEADER_LENGTH;
+		StorageClientInfo   clientInfo  = storageTask.clientInfo;
+		StorageFileContext  fileContext = clientInfo.fileContext;
+		StorageUploadInfo   uploadInfo  = fileContext.extraInfo.upload;
+		//包体长度
+		long packetLen = clientInfo.totalLength - ProtoCommon.HEADER_LENGTH;
+		//存储路径
+		int storePathIndex = packet.getStorePathIndex();
+		//文件扩展名
+		String fileExtName = packet.getFileExtName();
+		//文件实际长度
+		long fileBytes = packet.getFileLength();
+		
+		//检查包体的长度
+		checkBodyLength(storageTask, packetLen);
+		//检查存储路径索引
+		checkStorePathIndex(storePathIndex);
+		//检查文件长度
+		checkFileLength(packetLen, fileBytes);
+		//检查扩展名
+		checkFileExtName(fileExtName);
 
-		if (packetLen < 1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
-				ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN)
-		{
-			LogKit.error(String.format("client ip: %s, package size %ld is not correct,expect length >= %d", 
-					storageTask.clientIp,packetLen,
-					1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
-					ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN),this.getClass());
-			return ProtoCommon.EINVAL;
-		}
-
-		//跳过头部信息
-		storageTask.data.position(ProtoCommon.HEADER_LENGTH);
-		//头部后第一个字节:存储路径索引
-		storePathIndex = storageTask.data.get();
-		if (storePathIndex == -1)
-		{
-			if ((result = StorageService.storage_get_storage_path_index(storePathIndex)) != 0)
-			{
-				LogKit.error(String.format("get_storage_path_index fail,errno: %d",result),this.getClass());
-				return result;
-			}
-		}
-		else if (storePathIndex < 0 || storePathIndex >= Globle.g_fdfs_store_paths.count)
-		{
-			LogKit.error(String.format("store_path_index: %d is invalid",storePathIndex),this.getClass());
-			return ProtoCommon.EINVAL;
-		}
-
-		//真实文件的长度
-		fileBytes = storageTask.data.getLong();
-		if (fileBytes < 0 || fileBytes != packetLen - (1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
-						ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN))
-		{
-			LogKit.error(String.format("pkg length is not correct,invalid file bytes: %ld, total body length: %ld",fileBytes, packetLen),this.getClass());
-			return ProtoCommon.EINVAL;
-		}
-		//获取扩展名
-		byte[] fileExtNameBuffer = new byte[6];
-		storageTask.data.get(fileExtNameBuffer,0,6);
-		fileExtName = new String(fileExtNameBuffer);
-		//validate file name
-		if ((result = StorageService.fdfs_validate_filename(fileExtName)) != 0)
-		{
-			LogKit.error(String.format("file_ext_name: %s is invalid!",fileExtName),this.getClass());
-			return result;
-		}
-
-		fileContext.calcCrc32 = true;//need crc32 validate
+		fileContext.calcCrc32	 = true;//need crc32 validate
 		fileContext.calcFileHash = Globle.g_check_file_duplicate;//validate repeate file default false
-		fileContext.extraInfo.upload.startTime = Globle.now();//record current time
+		uploadInfo.startTime 	 = Globle.now();//record current time
 		//set file ext name
-		fileContext.extraInfo.upload.fileExtName = fileExtName;
-		fileContext.extraInfo.upload.formattedExtName = StorageService.storage_format_ext_name(fileExtName);//fommat file ext name
-		fileContext.extraInfo.upload.trunkInfo.path.storePathIndex = (short) storePathIndex;//set store_path_index
-		fileContext.extraInfo.upload.fileType = ProtoCommon._FILE_TYPE_REGULAR;//set file type
+		uploadInfo.fileExtName 		= fileExtName;
+		uploadInfo.formattedExtName = StorageService.storage_format_ext_name(fileExtName);//fommat file ext name
+		uploadInfo.trunkInfo.path.storePathIndex = (short) storePathIndex;//set store_path_index
+		uploadInfo.fileType = ProtoCommon._FILE_TYPE_REGULAR;//set file type
 		fileContext.syncFlag = ProtoCommon.STORAGE_OP_TYPE_SOURCE_CREATE_FILE;//set storage opt
-		fileContext.timestamp2Log = fileContext.extraInfo.upload.startTime;
+		fileContext.timestamp2Log = uploadInfo.startTime;
 		fileContext.op = ProtoCommon.FDFS_STORAGE_FILE_OP_WRITE;//set context op is FDFS_STORAGE_FILE_OP_WRITE
 		/*if (bAppenderFile)
 		{
@@ -155,28 +124,103 @@ public class UploadFileCommand extends AbstractCommand<UploadFilePacket> {
 				return ProtoCommon.ENOSPC;
 			}*/
 
-			crc32 = Globle.rand();
-			fileContext.extraInfo.upload.ifSubPathAlloced = false;
+			int crc32 = Globle.rand();
+			uploadInfo.ifSubPathAlloced = false;
 			//generate store file name
-			fileContext.fileName = StorageService.storage_get_unique_full_filename(clientInfo, 
-					fileContext.extraInfo.upload.startTime, 
-					fileBytes, crc32, fileContext.extraInfo.upload.formattedExtName);
+			fileContext.fileName = StorageService.getUniqueFullFileName(clientInfo, 
+					uploadInfo.startTime, 
+					fileBytes, crc32, uploadInfo.formattedExtName);
 			//set clean callback
-			fileOffset = 0;
-			clean_func = dio_write_finish_clean_up(storageTask);
-			fileContext.extraInfo.upload.ifGenFileName = true;
-			fileContext.extraInfo.upload.beforeOpenCallback = null;
-			fileContext.extraInfo.upload.beforeCloseCallback = null;
+			DisconnectCleanFunc clean_func = dio_write_finish_clean_up(storageTask);
+			uploadInfo.ifGenFileName = true;
+			uploadInfo.beforeOpenCallback = null;
+			uploadInfo.beforeCloseCallback = null;
 			fileContext.openFlags = ProtoCommon.O_WRONLY | ProtoCommon.O_CREAT | ProtoCommon.O_TRUNC | Globle.g_extra_open_file_flags;
+			fileContext.buffOffset = 0;
+			fileContext.offset = 0;
+			fileContext.start = 0;
+			fileContext.end = fileBytes;
+			if (fileContext.calcCrc32)
+			{
+				fileContext.crc32 = CRC32_XINIT;
+			}
 		}
 
 		//write to file
-	  return storage_write_to_file(storageTask, fileOffset, fileBytes, 
+	 /* return storage_write_to_file(storageTask, 0, fileBytes, 
 				storageTask.data.position(), dio_write_file(), 
 				storage_upload_file_done_callback(), 
-				clean_func, storePathIndex);
+				clean_func, storePathIndex);*/
+		storageTask.callback = new UploadFileDoneCallback();
+		storageTask.state = StorageTask.STATE_NIO_READ;
+		//清除IoBuffer的数据,现在的处理方式没有限制从内核读取的字节数,所以这儿可能会有多余REQUEST的数据
+		storageTask.data.compact();
+		//限制读取的长度
+		storageTask.data.limit(Math.min((int)fileBytes, storageTask.size));
+		return ProtoCommon.SUCCESS;
+	}
+
+
+	private void checkFileExtName(String fileExtName) throws ProtocolParseException {
+		if (!StorageService.validateFileName(fileExtName)){
+			LogKit.error(String.format("file_ext_name: %s is invalid!",fileExtName),this.getClass());
+			throw new ProtocolParseException(String.format("file_ext_name: %s is invalid!",fileExtName));
+		}
+	}
 
 	
+	/**检查文件长度
+	 * @param packetLen
+	 * @param fileBytes
+	 * @throws ProtocolParseException
+	 */
+	private void checkFileLength(long packetLen, long fileBytes) throws ProtocolParseException {
+		if (fileBytes < 0 || fileBytes != packetLen - (1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
+						ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN))
+		{
+			LogKit.error(String.format("pkg length is not correct,invalid file bytes: %ld, total body length: %ld",fileBytes, packetLen),this.getClass());
+			throw new ProtocolParseException(String.format("pkg length is not correct,invalid file bytes: %ld, total body length: %ld",fileBytes, packetLen));
+		}
+	}
+
+	/**检查存储路径
+	 * @param storePathIndex
+	 * @throws ProtocolParseException
+	 */
+	private void checkStorePathIndex(int storePathIndex) throws ProtocolParseException {
+		int result;
+		if (storePathIndex == -1)
+		{
+			if ((result = StorageService.storage_get_storage_path_index(storePathIndex)) != 0)
+			{
+				LogKit.error(String.format("get_storage_path_index fail,errno: %d",result),this.getClass());
+				throw new ProtocolParseException(String.format("get_storage_path_index fail,errno: %d",result));
+			}
+		}
+		else if (storePathIndex < 0 || storePathIndex >= Globle.g_fdfs_store_paths.count)
+		{
+			LogKit.error(String.format("store_path_index: %d is invalid",storePathIndex),this.getClass());
+			throw new ProtocolParseException(String.format("store_path_index: %d is invalid",storePathIndex));
+		}
+	}
+
+	/**
+	 * 检查实体数据长度
+	 * */
+	private void checkBodyLength(StorageTask storageTask, long packetLen) throws ProtocolParseException {
+		if (packetLen < 1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
+				ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN)
+		{
+			LogKit.error(String.format("client ip: %s, package size %ld is not correct,expect length >= %d", 
+					storageTask.clientIp,packetLen,
+					1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
+					ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN),this.getClass());
+			
+			throw new ProtocolParseException(String.format("client ip: %s, package size %ld is not correct,expect length >= %d", 
+					storageTask.clientIp,packetLen,
+					1 + ProtoCommon.FDFS_PROTO_PKG_LEN_SIZE + 
+					ProtoCommon.FDFS_FILE_EXT_NAME_MAX_LEN));
+		}
 	}
 
 	private int storage_write_to_file(StorageTask storageTask,

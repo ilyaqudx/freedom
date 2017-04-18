@@ -24,7 +24,7 @@ public class RequestParser {
 		
 		requests.put(ProtoCommon.STORAGE_PROTO_CMD_UPLOAD_FILE, (header,buffer)->
 		{
-			return new UploadFilePacket(buffer.get(),buffer.getString(6, UTF8_DECODER),buffer.getLong());
+			return new UploadFilePacket(buffer.get(),buffer.getLong(),buffer.getString(6, UTF8_DECODER));
 		});
 		
 		requests.put(ProtoCommon.STORAGE_PROTO_CMD_DOWNLOAD_FILE, (header,buffer) ->

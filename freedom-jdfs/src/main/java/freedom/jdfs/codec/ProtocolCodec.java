@@ -23,14 +23,19 @@ public class ProtocolCodec {
 	{
 		IoBuffer buffer = storageTask.data;
 		if(storageTask.state == StorageTask.STATE_INIT){
-			return parseAndHandleRequest(session, storageTask, buffer);
-		}
-		else if(storageTask.state == StorageTask.STATE_NIO_READ){
-			//判断本次数据是否装满
-			if(!storageTask.isComplete())
+			if(parseAndHandleRequest(session, storageTask, buffer))
 				return true;
-			MessageHandler.handleReadBytes(session, storageTask);
 		}
+		if(storageTask.state == StorageTask.STATE_NIO_READ){
+			return parseReadBytes(session, storageTask);
+		}
+		return false;
+	}
+
+	private static boolean parseReadBytes(NioSession session,StorageTask storageTask) {
+		if(storageTask.data.hasRemaining())
+			return true;
+		MessageHandler.handleReadBytes(session, storageTask);
 		return false;
 	}
 
@@ -50,6 +55,7 @@ public class ProtocolCodec {
 		{
 			Packet  packet  = RequestParser.parse(header, buffer);
 			MessageHandler.handleRequest(session,new Request(header, packet), storageTask);
+			return buffer.hasRemaining();//是否需要再读
 		}
 		catch(BufferUnderflowException e)
 		{
@@ -61,6 +67,5 @@ public class ProtocolCodec {
 		{
 			throw new ProtocolParseException(e.getMessage());
 		}
-		return false;
 	}
 }

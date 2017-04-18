@@ -133,7 +133,7 @@ public class StorageService {
 		storage_nio_notify(storageTask);
 	}
 
-	private static void storage_nio_notify(StorageTask storageTask) 
+	public static void storage_nio_notify(StorageTask storageTask) 
 	{
 		storageTask.session.getProcessor().complete(storageTask);
 	}
@@ -570,7 +570,7 @@ public class StorageService {
 	/**
 	 * 获取唯一的文件全路径名
 	 * */
-	public static final String storage_get_unique_full_filename(StorageClientInfo clientInfo,
+	public static final String getUniqueFullFileName(StorageClientInfo clientInfo,
 			long start_time, long file_size, int crc32,
 			String formattedExtName)
 	{
@@ -717,31 +717,29 @@ public class StorageService {
 
 	public static final String storage_format_ext_name(String fileExtName) 
 	{
-		char[] array = fileExtName.toCharArray();
-		
-		int extNameLen = fileExtName.indexOf('\0');
-		extNameLen = extNameLen == -1 ? FDFS_FILE_EXT_NAME_MAX_LEN : extNameLen;
+		int extNameLen = fileExtName.length();
 		int padLen = extNameLen == 0 ? FDFS_FILE_EXT_NAME_MAX_LEN : FDFS_FILE_EXT_NAME_MAX_LEN - extNameLen;
 		
 		if(padLen > 0){
-			System.arraycopy(array, 0, array, padLen, extNameLen);
+			byte[] array    = fileExtName.getBytes();
+			byte[] newArray = new byte[FDFS_FILE_EXT_NAME_MAX_LEN];
+			System.arraycopy(array, 0, newArray, FDFS_FILE_EXT_NAME_MAX_LEN - extNameLen, extNameLen);
+			for (int i=0; i < padLen - 1; i++)
+			{
+				newArray[i] = (byte) Base64.BASE64_CODE.charAt(Globle.rand(62));
+			}
+			
+			if (extNameLen > 0){
+				newArray[FDFS_FILE_EXT_NAME_MAX_LEN - extNameLen - 1] = '.';
+			}
+			return new String(newArray);
 		}
-		
-		for (int i=0; i < padLen - 1; i++)
-		{
-			array[i] = Base64.BASE64_CODE.charAt(Globle.rand(62));
-		}
-
-		if (extNameLen > 0){
-			array[FDFS_FILE_EXT_NAME_MAX_LEN - extNameLen - 1] = '.';
-		}
-		
-		return new String(array);
+		return fileExtName;
 	}
 
-	public static final int fdfs_validate_filename(String file_ext_name) {
-		// TODO Auto-generated method stub
-		return 0;
+	public static final boolean validateFileName(String fileExtName)
+	{
+		return true;
 	}
 
 	public static final int storage_get_storage_path_index(int store_path_index)

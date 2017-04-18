@@ -8,5 +8,5 @@ import freedom.jdfs.storage.StorageTask;
 public interface Command<P extends Packet> {
 
 	
-	public int execute(NioSession session,StorageTask storageTask,Request request);
+	public int execute(NioSession session,StorageTask storageTask,Request request) throws Exception;
 }

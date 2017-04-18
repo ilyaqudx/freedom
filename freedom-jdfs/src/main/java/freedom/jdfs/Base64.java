@@ -4,15 +4,16 @@ import java.nio.CharBuffer;
 
 public class Base64 {
 
+	@SuppressWarnings("restriction")
 	public static void main(String[] args)
 	{
 		String str = "-4";
-		String jdkEncode = new sun.misc.BASE64Encoder().encode(str.getBytes());
+		//String jdkEncode = new sun.misc.BASE64Encoder().encode(str.getBytes());
 		String encodeStr = encode(str);
 		
-		System.out.println(jdkEncode);
+		//System.out.println(jdkEncode);
 		System.out.println(encodeStr);
-		System.out.println(jdkEncode.equals(encodeStr));
+		//System.out.println(jdkEncode.equals(encodeStr));
 	}
 	
 	public static final String BASE64_CODE= "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";  

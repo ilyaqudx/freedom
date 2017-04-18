@@ -1,7 +1,6 @@
 package freedom.jdfs.nio;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -13,6 +12,7 @@ import org.apache.log4j.Logger;
 
 import freedom.jdfs.LogKit;
 import freedom.jdfs.codec.ProtocolCodec;
+import freedom.jdfs.common.buffer.IoBuffer;
 import freedom.jdfs.exception.ProtocolParseException;
 import freedom.jdfs.protocol.ProtoCommon;
 import freedom.jdfs.storage.StorageClientInfo;
@@ -194,7 +194,7 @@ public class NioProcessor {
 					&pTask.event.timer, g_current_time +
 					g_fdfs_network_timeout);*/
 				try {
-					bytes = storageTask.session.getChannel().write(storageTask.data);
+					bytes = storageTask.session.getChannel().write(storageTask.data.buf());
 				} catch (IOException e) {
 					e.printStackTrace();
 					LogKit.error(String.format("client ip : %s,write failed,error info", storageTask.clientIp,e.getMessage()), this.getClass());
@@ -311,10 +311,10 @@ public class NioProcessor {
 					try
 					{
 						//only read recv_bytes
-						ByteBuffer buffer = storageTask.data;
+						IoBuffer buffer = storageTask.data;
 						buffer.limit(storageTask.data.position() + recv_bytes);
 						
-						int len = session.getChannel().read(storageTask.data);
+						int len = session.getChannel().read(storageTask.data.buf());
 						if(len == -1){
 							throw new ClosedChannelException();
 						}
@@ -356,7 +356,7 @@ public class NioProcessor {
 		public void storage_dio_queue_push(NioSession session,StorageTask storageTask) 
 		{
 			storageTask.clientInfo.stage = StorageTask.FDFS_STORAGE_STAGE_DIO_THREAD;
-			StorageServer.context.storageDioService.addWriteTask(storageTask);
+			StorageServer.context.storageDioService.pushToWrite(storageTask);
 		}
 	}
 }

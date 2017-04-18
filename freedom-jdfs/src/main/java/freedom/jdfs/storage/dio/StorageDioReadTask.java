@@ -35,7 +35,7 @@ public class StorageDioReadTask extends Thread {
 				storageTask.data.position(fileContext.buffOffset);
 				storageTask.data.limit(storageTask.length);
 				int expect = storageTask.length - fileContext.buffOffset;
-				int len = channel.read(storageTask.data);
+				int len = channel.read(storageTask.data.buf());
 				if(len != expect){
 					LogKit.error(String.format("read bytes error,expect %d,actual %d",expect,len), StorageDioReadTask.class);
 				}else{

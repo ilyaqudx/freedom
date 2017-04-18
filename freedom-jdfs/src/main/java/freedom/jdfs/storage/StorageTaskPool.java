@@ -1,10 +1,10 @@
 package freedom.jdfs.storage;
 
-import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import freedom.jdfs.LogKit;
+import freedom.jdfs.common.buffer.IoBuffer;
 
 public class StorageTaskPool {
 
@@ -49,7 +49,7 @@ public class StorageTaskPool {
 				if(task.size <= 0){
 					LogKit.error("【alloc task size is 0】", this.getClass());
 				}
-				task.data = ByteBuffer.allocate(max_buffer_size);
+				task.data = IoBuffer.allocate(max_buffer_size);
 				queue.add(task);
 			}
 		}

@@ -7,6 +7,7 @@ import java.util.Arrays;
 import freedom.jdfs.LogKit;
 import freedom.jdfs.nio.NioSession;
 import freedom.jdfs.protocol.ProtoCommon;
+import freedom.jdfs.protocol.UploadFilePacket;
 import freedom.jdfs.storage.DisconnectCleanFunc;
 import freedom.jdfs.storage.FileDealDoneCallback;
 import freedom.jdfs.storage.Globle;
@@ -18,13 +19,12 @@ import freedom.jdfs.storage.StorageTask;
 import freedom.jdfs.storage.StorageTaskPool;
 import freedom.jdfs.storage.TaskDealFunc;
 
-public class UploadFileCommand implements Command {
+public class UploadFileCommand extends AbstractCommand<UploadFilePacket> {
 
 	private static final int STORAGE_STATUE_DEAL_FILE = 123456;
 
-
 	@Override
-	public int execute(NioSession session, StorageTask storageTask) 
+	protected int doCommand(NioSession session, StorageTask storageTask,UploadFilePacket packet)
 	{
 		int result = 0 , crc32 = 0;
 		long packetLen;//包体长度
@@ -176,6 +176,7 @@ public class UploadFileCommand implements Command {
 				storage_upload_file_done_callback(), 
 				clean_func, storePathIndex);
 
+	
 	}
 
 	private int storage_write_to_file(StorageTask storageTask,

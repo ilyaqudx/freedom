@@ -29,7 +29,7 @@ public class StorageDioWriteTask extends StorageDioTask{
 			storageTask.data.position(fileContext.buffOffset);
 			int expect = storageTask.data.remaining();
 			//这儿如果一次没有将数据写完是会有问题的。
-			int writeBytes = fileContext.file.getChannel().write(storageTask.data);
+			int writeBytes = fileContext.file.getChannel().write(storageTask.data.buf());
 			if(writeBytes != expect){
 				//error
 				storageTask.callback.exception(storageTask,

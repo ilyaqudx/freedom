@@ -1,16 +1,14 @@
 package freedom.jdfs.protocol;
 
-import java.nio.ByteBuffer;
+import freedom.jdfs.common.Packet;
 
-import freedom.jdfs.storage.Globle;
-
-public class DownloadPacket {
-	private long offset;
-	private long downloadBytes;
-	private String group;
+public class DownloadFilePacket extends Packet{
+	private long offset;//8
+	private long downloadBytes;//8
+	private String group;//16
 	private String fileName;
 
-	public DownloadPacket(long offset, long downloadBytes, String group,String fileName) 
+	public DownloadFilePacket(long offset, long downloadBytes, String group,String fileName) 
 	{
 		this.offset = offset;
 		this.group = group;
@@ -50,18 +48,6 @@ public class DownloadPacket {
 		this.fileName = fileName;
 	}
 	
-	public static final DownloadPacket parsePacket(ByteBuffer buffer,long totalLength)
-	{
-		int bodyLen = (int) (totalLength - ProtoCommon.HEADER_LENGTH);
-		buffer.position(ProtoCommon.HEADER_LENGTH);
-		long offset = buffer.getLong();
-		long downloadBytes = buffer.getLong();
-		String group = Globle.parseCString(buffer.array(),buffer.position());
-		String fileName = new String(buffer.array(),buffer.position() + 16,bodyLen - 32);
-		
-		return new DownloadPacket(offset, downloadBytes, group, fileName);
-	}
-
 	@Override
 	public String toString() {
 		return "DownloadPacket [offset=" + offset + ", downloadBytes="

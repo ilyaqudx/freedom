@@ -57,7 +57,7 @@ public class StorageDioService {
 	/**
 	 * 添加写任务
 	 * */
-	public void addWriteTask(StorageTask task)
+	public void pushToWrite(StorageTask task)
 	{
 		if(task == null)
 		{
@@ -99,7 +99,7 @@ public class StorageDioService {
 	{
 		try {
 			if(storageTask.clientInfo.fileContext.op ==ProtoCommon.FDFS_STORAGE_FILE_OP_WRITE)
-				addWriteTask(storageTask);
+				pushToWrite(storageTask);
 			else if(storageTask.clientInfo.fileContext.op == ProtoCommon.FDFS_STORAGE_FILE_OP_READ)
 				StorageServer.context.storageDioService.addReadTask(storageTask);
 		}
